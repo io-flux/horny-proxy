@@ -88,7 +88,7 @@ stash:
 disclaimer: "For private use only. No unauthorized sharing."
 ```
 
-## Optional: customize logo 
+4. Optional: customize logo 
 
 Add your personal logos in `static/localized/` (e.g., `logo.png`, `logo@2x.png`). 
 
