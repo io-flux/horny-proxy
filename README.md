@@ -1,1 +1,114 @@
-Horny Proxy Horny Proxy is a FastAPI-based application for securely sharing videos from a Stash adult media management platform. It provides a public-facing video playback interface with a modern, Gruvbox dark-themed UI and an admin panel for managing shared links, protected by JWT authentication. Features • Public Playback Interface: Sleek video player with Video.js, supporting seeking, playback speed (0.5x, 1x, 1.5x, 2x), and fullscreen, styled in Gruvbox dark theme with a logo placeholder and disclaimer. • Admin Panel: Web interface to share, view, edit, and delete video links, with analytics (hit counts, total shares). Requires username/password login. • Secure Sharing: Generates unique, expiring share links without exposing Stash API keys. • Configuration: Reads Stash server details, admin credentials, and server host/port from config.yaml. • Database: SQLite stores share metadata (video name, Stash ID, expiration, hits). Prerequisites • Python 3.8+ • Mamba (or Conda) for environment management • A running Stash instance with API access enabled • A logo image (e.g., logo-placeholder.png) Installation 1 Create and activate a Mamba environment:mamba create -n horny python=3.8 fastapi uvicorn requests pyyaml sqlalchemy pydantic python-jose cryptography passlib 2 mamba activate horny 3 4 Set up the project structure:mkdir horny 5 cd horny 6 mkdir static 7 Place horny.py, config.yaml, and static files (admin.html, admin.js, styles.css, logo-placeholder.png) in the appropriate directories. 8 Configure config.yaml: Create config.yaml in the project root:horny: 9 host: "0.0.0.0" 10 port: 8000 11 admin_username: "admin" 12 admin_password: "your_secure_password" # Replace with a strong password 13 stash: 14 server_ip: "192.168.1.100" # Replace with your Stash server IP 15 port: 9999 # Replace with your Stash server port 16 api_key: "your_api_key_here" # Replace with your Stash API key 17 disclaimer: "This content is shared for private use only. Unauthorized distribution is prohibited." 18 19 Create static files: ◦ static/admin.html: Admin panel HTML (see implementation details). ◦ static/admin.js: Admin panel JavaScript for dynamic functionality. ◦ static/styles.css: Gruvbox dark theme CSS for both interfaces. ◦ static/logo-placeholder.png: Placeholder logo (replace with your own). Usage 1 Run the application:python horny.py 2 The server starts on the host/port specified in config.yaml (e.g., http://0.0.0.0:8000). 3 Access the admin panel: ◦ Open http://:8000/static/admin.html. ◦ Log in with the admin_username and admin_password from config.yaml. ◦ Share videos, view/edit/delete links, and check analytics. 4 Share a video: ◦ In the admin panel, enter the video name, Stash video ID, and days valid, then click “Share”. ◦ Copy the share URL (e.g., http://:8000/share/abcd1234). 5 View a shared video: ◦ Open the share URL in a browser to access the video player with Gruvbox theme, logo, and disclaimer. Security Notes • Admin Access: Protected by JWT authentication. Use a strong password in config.yaml. • Share Links: Unique and expiring, with no API key exposure. • Production: Use HTTPS (e.g., via Nginx) to secure traffic. Customization • Logo: Replace static/logo-placeholder.png with your logo (recommended size: 200x50 pixels). • Disclaimer: Edit the disclaimer field in config.yaml. • Theme: Modify static/styles.css to adjust Gruvbox colors or styles. Limitations • Video.js supports basic playback; advanced features (e.g., subtitles, multiple resolutions) depend on Stash capabilities. • SQLite is lightweight but may need optimization for large-scale use. • Admin panel is simple; extend admin.js for additional features (e.g., graphs, bulk actions). Troubleshooting • Server not starting: Verify config.yaml syntax and ensure dependencies are installed. • Videos not streaming: Check Stash server accessibility and valid video IDs. 
+# HornyProxy 🍒
+
+![Logo Placeholder](static/logo-placeholder@0.5x.png)
+
+HornyProxy is a FastAPI app for securely sharing videos from your Stash adult media platform. It offers a sleek UI for playback and a secure admin panel with JWT authentication to manage your private shares.
+
+## Key Features
+
+| Feature | Description |
+|:--------|:------------|
+| **Public Playback** | Smooth Video.js player with seeking, speed control (0.5x-2x), and fullscreen mode |
+| **Admin Panel** | Easily create, edit, delete, and track hits on shared links |
+| **Secure Sharing** | Unique, expiring links with optional password protection |
+| **Resolution Options** | Choose streaming quality: LOW, MEDIUM, or HIGH |
+| **Stash Integration** | Streams content from Stash without exposing API keys |
+
+## Prerequisites
+
+* Python 3.8+
+* Mamba (or Conda) for environment management
+* Running Stash instance with API access
+* Logo images for branding
+
+## Installation
+
+1. Set up a Mamba environment:
+
+```bash
+mamba create -n hornyproxy python=3.8 fastapi uvicorn requests pyyaml sqlalchemy pydantic python-jose cryptography passlib
+mamba activate hornyproxy
+```
+
+2. Create the project structure:
+
+```bash
+mkdir hornyproxy
+cd hornyproxy
+mkdir -p static/shares
+```
+
+3. Add `hornyproxy.py`, `config.yaml`, and static files to the directories.
+
+## Configuration
+
+Create `config.yaml` in the project root:
+
+```yaml
+horny:
+  host: "127.0.0.1"
+  port: 6669
+  base_domain: "https://example.com"
+  admin_username: "admin"
+  admin_password: "your_secure_password"
+  default_resolution: "MEDIUM"  # LOW, MEDIUM, HIGH
+  share_id_length: 8
+stash:
+  server_ip: "127.0.0.1"
+  port: 5588
+  api_key: "yourStashAPIKeyHere"
+disclaimer: "For private use only. No unauthorized sharing."
+```
+
+## Static Files
+
+| File | Description |
+|:-----|:------------|
+| `static/admin.html` | Admin panel interface |
+| `static/admin.js` | Admin panel JavaScript |
+| `static/styles.css` | Custom styling for interfaces |
+| `static/video-player.html` | Video player template |
+| `static/password-prompt.html` | Password protection template |
+| `static/logo.png` | Default logo placeholder (with @2x, @3x options) |
+
+**Customization Note**: Add your personal logos in `static/localized/` (e.g., `logo.png`, `logo@2x.png`). Without them, default placeholders in `static/` are used.
+
+## Usage
+
+1. Start the server:
+
+```bash
+python hornyproxy.py
+```
+
+Add `--debug` for detailed logs:
+
+```bash
+python hornyproxy.py --debug
+```
+
+2. Server runs on the host/port in `config.yaml` (default: http://127.0.0.1:6669).
+
+3. Access the admin panel:
+   - Open http://127.0.0.1:6669/static/admin.html
+   - Log in with configured credentials
+
+4. Share a video:
+   - Enter video name or fetch title from Stash
+   - Add Stash ID, validity days, resolution, and optional password
+   - Click "Share" and copy the link
+
+5. Watch the content:
+   - Open the share URL and enter password if required 😘
+
+## Security & Customization 🔒
+
+| Feature | Description |
+|:--------|:------------|
+| **JWT Authentication** | Admin access is securely protected |
+| **Password Protection** | Optional safeguard for individual shares |
+| **Expiring Links** | Shares auto-expire for added safety |
+| **No API Exposure** | Keeps your Stash API key hidden |
+
+**Make It Yours**: Add your logo at `static/localized/logo.png` (with @2x, @3x for crispness), edit the disclaimer in `config.yaml`, and tweak `static/styles.css` to style your spicy setup 🍓.
+
