@@ -1,8 +1,6 @@
-# HornyProxy 🍒
-
 ![Logo Placeholder](static/logo-placeholder@0.5x.png)
 
-HornyProxy is a FastAPI app for securely sharing videos from your Stash adult media platform. It offers a sleek UI for playback and a secure admin panel with JWT authentication to manage your private shares.
+**HornyProxy** 🍒 is a FastAPI microservice for securely sharing videos from your Stash adult media platform. It offers a no frills dark UI for playback and a secure admin panel with JWT authentication to manage your private shares.
 
 ## Key Features
 
@@ -19,59 +17,82 @@ HornyProxy is a FastAPI app for securely sharing videos from your Stash adult me
 * Python 3.8+
 * Mamba (or Conda) for environment management
 * Running Stash instance with API access
-* Logo images for branding
 
-## Installation
+## Install & configure
 
-1. Set up a Mamba environment:
+1. Clone the repo:
+
+```bash
+git clone https://github.com/io-flux/horny-proxy
+cd horny-proxy
+```
+
+2. Get dependencies
+
+a. Either use `mamba` or `conda` (recommended):
 
 ```bash
 mamba create -n hornyproxy python=3.8 fastapi uvicorn requests pyyaml sqlalchemy pydantic python-jose cryptography passlib
 mamba activate hornyproxy
 ```
 
-2. Create the project structure:
+b. Or just use `pip`:
 
-```bash
-mkdir hornyproxy
-cd hornyproxy
-mkdir -p static/shares
+```
+# Ensure you are in `/path/to/horny-proxy`
+pip install -r requirements.txt
 ```
 
-3. Add `hornyproxy.py`, `config.yaml`, and static files to the directories.
+3. Fill in your details in `config.yaml`:
 
-## Configuration
+```
+# Ensure you are in `/path/to/horny-proxy`
+# Optional: start with the example configuration:
+cp example-config.yaml config.yaml
 
-Create `config.yaml` in the project root:
+# Use nano or your preferred text editor:
+nano config.yaml
+```
+
 
 ```yaml
 horny:
+  # host specifies which interface horny-proxy will bind to; then pick an open port
+  # 127.0.0.1 will only be available locally (or over a local reverse proxy)
+  # 0.0.0.0 will be available to anyone that can reach your device on the port specified below
   host: "127.0.0.1"
   port: 6669
+
+  # base_domain is used to generate share links
   base_domain: "https://example.com"
+
+  # username and password for creating / managing shares
   admin_username: "admin"
   admin_password: "your_secure_password"
+
+  # default resolution when creating a new share
   default_resolution: "MEDIUM"  # LOW, MEDIUM, HIGH
+
+  # the length of the UUID generated for new shares, e.g., 8 characters might look like `https://horny-proxy.club/share/gkCXaxGw`
   share_id_length: 8
+
 stash:
+  # the IP address and port of your stash instance
   server_ip: "127.0.0.1"
-  port: 5588
+  port: 999
+
+  # your stash instance's API key
   api_key: "yourStashAPIKeyHere"
+
+# text displayed below player on video shares
 disclaimer: "For private use only. No unauthorized sharing."
 ```
 
-## Static Files
+## Optional: customize logo 
 
-| File | Description |
-|:-----|:------------|
-| `static/admin.html` | Admin panel interface |
-| `static/admin.js` | Admin panel JavaScript |
-| `static/styles.css` | Custom styling for interfaces |
-| `static/video-player.html` | Video player template |
-| `static/password-prompt.html` | Password protection template |
-| `static/logo.png` | Default logo placeholder (with @2x, @3x options) |
+Add your personal logos in `static/localized/` (e.g., `logo.png`, `logo@2x.png`). 
 
-**Customization Note**: Add your personal logos in `static/localized/` (e.g., `logo.png`, `logo@2x.png`). Without them, default placeholders in `static/` are used.
+Without them, default placeholders in `static/` are used.
 
 ## Usage
 
