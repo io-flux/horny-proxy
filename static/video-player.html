@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{video_name}</title>
+    <link href="/static/styles.css" rel="stylesheet">
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
+    <link href="/static/video-player-theme.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <img src="{logo_path}" srcset="{srcset}" alt="Logo" class="logo">
+        <div class="video-container">
+            <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" width="800">
+                <source src="/share/{share_id}/stream.m3u8" type="application/x-mpegURL">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <p class="disclaimer">{disclaimer}</p>
+    </div>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        var video = document.getElementById('video-player');
+        var player = videojs('video-player', {{
+            playbackRates: [0.5, 1, 1.5, 2]
+        }});
+        var src = '/share/{share_id}/stream.m3u8';
+        if (Hls.isSupported()) {{
+            var hls = new Hls();
+            hls.loadSource(src);
+            hls.attachMedia(video);
+        }} else if (video.canPlayType('application/vnd.apple.mpegurl')) {{
+            video.src = src;
+        }}
+    </script>
+</body>
+</html>

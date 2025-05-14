@@ -1,0 +1,68 @@
+/* Cyberpunk theme for Video.js Player */
+
+.video-js {
+    color: #99ccff; /* Light cyan/blue for text/icons */
+}
+
+.video-js .vjs-control-bar {
+    background-color: rgba(26, 26, 46, 0.85); /* Dark blue/purple, slightly transparent */
+    border-top: 1px solid #00ffff; /* Cyan top border */
+}
+
+/* Play button, volume, fullscreen etc. */
+.video-js .vjs-control:not(.vjs-disabled):hover,
+.video-js .vjs-big-play-button:hover {
+    color: #39ff14; /* Electric lime for hover */
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.7);
+}
+
+.video-js .vjs-big-play-button {
+    background-color: rgba(26, 26, 46, 0.7);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    margin-top: -1em;
+    margin-left: -1em;
+}
+
+.video-js .vjs-big-play-button .vjs-icon-placeholder:before {
+    font-size: 1.2em;
+    line-height: inherit; /* Ensure icon is centered */
+}
+
+/* Progress bar */
+.video-js .vjs-play-progress,
+.video-js .vjs-volume-level {
+    background-color: #00ffff; /* Cyan for progress */
+}
+
+.video-js .vjs-slider {
+    background-color: rgba(44, 62, 80, 0.7); /* Darker slider background */
+}
+
+.video-js .vjs-load-progress {
+    background: rgba(153, 204, 255, 0.3); /* Lighter, transparent cyan for load progress */
+}
+
+.video-js .vjs-load-progress div {
+    background: rgba(153, 204, 255, 0.5); /* Slightly more opaque for loaded part */
+}
+
+/* Time display */
+.video-js .vjs-time-control {
+    color: #99ccff;
+}
+
+/* Menu buttons (e.g., for playback rates, subtitles) */
+.video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item:hover,
+.video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item.vjs-selected {
+    background-color: #1f1f38; /* Darker input background from main theme */
+    color: #39ff14; /* Lime for selected/hovered menu items */
+}
+
+.video-js .vjs-menu-button-popup .vjs-menu {
+    background-color: rgba(26, 26, 46, 0.95);
+    border: 1px solid #00ffff;
+} 

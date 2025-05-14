@@ -1,0 +1,9 @@
+.env
+config.yaml
+shared_videos.db
+static/shares/
+static/images/
+static/localized/
+__pycache__
+__pycaches/
+*.DS_Store

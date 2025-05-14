@@ -1,0 +1,191 @@
+body {
+    background-color: #0d0d1a; /* Very dark blue/black */
+    color: #99ccff; /* Light cyan/blue */
+    font-family: 'Courier New', Courier, monospace; /* Hacker-y font */
+    font-size: 15px; /* Slightly smaller base font */
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #1a1a2e; /* Darker blue/purple */
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2); /* Cyan glow */
+}
+
+h1, h2, h3 {
+    color: #00ffff; /* Bright cyan for headings */
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.grid-form {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.grid-form label {
+    text-align: right;
+    font-size: 11px; /* Smaller label font */
+}
+
+.grid-form input, .grid-form select, .grid-form button {
+    width: 100%;
+    padding: 8px;
+    margin: 0;
+    border: 1px solid #2c3e50; /* Dark blue/gray border */
+    border-radius: 4px;
+    background-color: #1f1f38; /* Darker input background */
+    color: #99ccff; /* Main text color */
+    font-size: 11px; /* Smaller input font */
+    transition: border-color 0.3s;
+}
+
+.grid-form input:focus, .grid-form select:focus {
+    border-color: #00ffff; /* Cyan outline on focus */
+    outline: none;
+}
+
+.grid-form select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%2399ccff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); /* New arrow color */
+    background-repeat: no-repeat;
+    background-position: right 8px top 50%;
+    padding-right: 24px;
+}
+
+.grid-form input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.grid-form input[type="number"]::-webkit-inner-spin-button,
+.grid-form input[type="number"]::-webkit-outer-spin-button {
+    display: none;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex: 1;
+}
+
+.input-group button {
+    width: auto;
+}
+
+button {
+    background-color: #2c3e50; /* Dark blue/gray button */
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+button:hover {
+    background-color: #39ff14; /* Electric lime on hover */
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.5); /* Lime glow */
+}
+
+.error-message {
+    color: #ff3333; /* Neon red for errors */
+    font-size: 12px;
+    margin: 5px 0;
+}
+
+.success-message {
+    color: #99ccff; /* Main text color for success */
+    font-size: 12px;
+    margin: 5px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #2c3e50; /* Dark blue/gray border */
+}
+
+th {
+    background-color: #1f1f38; /* Input background color */
+    color: #00ffff; /* Heading color for headers */
+}
+
+td a {
+    color: #99ccff; /* Main text color */
+    text-decoration: none;
+}
+
+td a:hover {
+    color: #39ff14; /* Lime hover */
+}
+
+.copy-button, .edit-button, .delete-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+#edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1a1a2e; /* New container color */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); /* Cyan glow */
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in;
+}
+
+#edit-modal .grid-form {
+    grid-template-columns: 120px 1fr;
+}
+
+.modal-buttons {
+    grid-column: span 2;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.logo {
+    display: block;
+    margin: 0 auto 20px;
+    max-width: 700px; /* Much larger logo */
+}
+
+.video-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.video-js {
+    background-color: #0d0d1a; /* New body background */
+}
+
+.disclaimer {
+    font-size: 9px;
+    color: #99ccff; /* Main text color */
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -60%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}

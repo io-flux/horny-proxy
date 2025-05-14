@@ -1,0 +1,13 @@
+horny:
+  host: 127.0.0.1
+  port: 6669
+  base_domain: https://example.com
+  admin_username: admin
+  admin_password: your_secure_password
+  default_resolution: MEDIUM # LOW MEDIUM OR HIGH
+  share_id_length: 8
+stash:
+  server_ip: 127.0.0.1
+  port: 5588
+  api_key: yourStashAPIKeyGoesHere
+disclaimer: Your disclaimer text here.
