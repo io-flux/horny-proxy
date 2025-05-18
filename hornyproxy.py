@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 import yaml
 import requests
@@ -123,6 +123,7 @@ class SharedVideo(Base):
     hits = Column(Integer, default=0)
     resolution = Column(String, default=DEFAULT_RESOLUTION)
     password_hash = Column(String, nullable=True)
+    show_in_gallery = Column(Boolean, default=False)
 
 Base.metadata.create_all(bind=engine)
 
@@ -133,6 +134,7 @@ class ShareVideoRequest(BaseModel):
     days_valid: int = 7
     resolution: Resolution = Field(default=Resolution[DEFAULT_RESOLUTION], description="Streaming resolution")
     password: str | None = None
+    show_in_gallery: bool = False
 
 class Token(BaseModel):
     access_token: str
@@ -226,10 +228,11 @@ async def gallery():
     try:
         # Get current time for expiration check
         current_time = datetime.datetime.now(timezone.utc)
-        # Query for active, non-password-protected shares
+        # Query for active, non-password-protected shares that are set to show in gallery
         videos = db.query(SharedVideo).filter(
             SharedVideo.expires_at > current_time,
-            SharedVideo.password_hash == None
+            SharedVideo.password_hash == None,
+            SharedVideo.show_in_gallery == True
         ).all()
         
         # Read the gallery template
@@ -325,7 +328,8 @@ async def share_video(request: ShareVideoRequest, current_user: str = Depends(ge
             expires_at=expires_at,
             hits=0,
             resolution=request.resolution,
-            password_hash=password_hash
+            password_hash=password_hash,
+            show_in_gallery=request.show_in_gallery if hasattr(request, 'show_in_gallery') else False
         )
         db.add(shared_video)
         db.commit()
@@ -336,6 +340,8 @@ async def share_video(request: ShareVideoRequest, current_user: str = Depends(ge
         
         logger.info(f"Video shared: share_id={share_id}, stash_video_id={request.stash_video_id}, resolution={request.resolution}")
         share_url = f"{BASE_DOMAIN}/share/{share_id}"
+        if request.password:
+            share_url += f"?pwd={request.password}"
         return {"share_url": share_url}
     except Exception as e:
         logger.error(f"Error sharing video: {e}")
@@ -358,6 +364,7 @@ async def edit_share(share_id: str, request: ShareVideoRequest, current_user: st
             video.password_hash = pwd_context.hash(request.password)
         else:
             video.password_hash = None
+        video.show_in_gallery = request.show_in_gallery if hasattr(request, 'show_in_gallery') else False
         db.commit()
         
         # Regenerate .m3u8 file
@@ -401,9 +408,7 @@ async def delete_share(share_id: str, current_user: str = Depends(get_current_us
 #  /share/{share_id}  (single, Jinja2 only)
 # ------------------------------------------------------------------
 @app.get("/share/{share_id}", response_class=HTMLResponse, response_model=None)
-async def share_page(share_id: str,
-                     password_verified: bool = False,
-                     request=None):
+async def share_page(share_id: str, password_verified: bool = False, request: Request = None):
     db = SessionLocal()
     try:
         video = db.query(SharedVideo).filter_by(share_id=share_id).first()
@@ -411,7 +416,7 @@ async def share_page(share_id: str,
             raise HTTPException(status_code=404,
                                 detail="Share link not found")
 
-        if request:                               # first-time visitor log
+        if request:  # first-time visitor log
             ip = request.client.host
             with visitor_log_lock:
                 if (ip, share_id) not in visitor_log_set:
@@ -425,10 +430,18 @@ async def share_page(share_id: str,
 
         # password gate -------------------------------------------------
         if video.password_hash and not password_verified:
-            html = TEMPLATES("password-prompt.html").render(
+            # Check if password is provided in URL
+            query_params = request.query_params if request else {}
+            url_password = query_params.get('pwd', '')
+            if url_password and pwd_context.verify(url_password, video.password_hash):
+                password_verified = True
+            else:
+                html = TEMPLATES("password-prompt.html").render(
                     video_name=video.video_name,
-                    share_id=share_id)
-            return HTMLResponse(html)
+                    share_id=share_id,
+                    url_password=url_password
+                )
+                return HTMLResponse(html)
 
         # count hit BEFORE showing page
         video.hits += 1
@@ -626,7 +639,8 @@ async def shared_videos(current_user: str = Depends(get_current_user)):
                     "hits": v.hits,
                     "share_url": share_url,
                     "resolution": v.resolution,
-                    "has_password": v.password_hash is not None
+                    "has_password": v.password_hash is not None,
+                    "show_in_gallery": v.show_in_gallery
                 }
             )
         return result

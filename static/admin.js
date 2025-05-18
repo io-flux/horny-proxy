@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const daysValidInput = document.getElementById('days-valid');
     const resolutionInput = document.getElementById('resolution');
     const sharePasswordInput = document.getElementById('share-password');
+    const showInGalleryInput = document.getElementById('show-in-gallery');
     const lookupTitleButton = document.getElementById('lookup-title-button');
     const shareMessage = document.getElementById('share-message');
     const shareError = document.getElementById('share-error');
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editDaysValidInput = document.getElementById('edit-days-valid');
     const editResolutionInput = document.getElementById('edit-resolution');
     const editSharePasswordInput = document.getElementById('edit-share-password');
+    const editShowInGalleryInput = document.getElementById('edit-show-in-gallery');
     const saveEditButton = document.getElementById('save-edit-button');
     const cancelEditButton = document.getElementById('cancel-edit-button');
     const editError = document.getElementById('edit-error');
@@ -214,7 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stash_video_id: parseInt(stashIdInput.value, 10),
             days_valid: parseInt(daysValidInput.value, 10),
             resolution: resolutionInput.value,
-            password: sharePasswordInput.value || null
+            password: sharePasswordInput.value || null,
+            show_in_gallery: showInGalleryInput.checked
         };
 
         if (!shareData.video_name || isNaN(shareData.stash_video_id) || isNaN(shareData.days_valid) || !shareData.resolution) {
@@ -263,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>
                     <a href="${shareUrl}" target="_blank">${shareUrl}</a>
                     <button class="copy-button" data-url="${shareUrl}">Copy</button>
-                    <button class="edit-button" data-share-id="${video.share_id}" data-video-name="${escapeHTML(video.video_name.split(' (')[0])}" data-days-valid="${calculateDaysRemaining(video.expires_at)}" data-resolution="${video.resolution}" data-has-password="${video.has_password}">Edit</button>
+                    <button class="edit-button" data-share-id="${video.share_id}" data-video-name="${escapeHTML(video.video_name.split(' (')[0])}" data-days-valid="${calculateDaysRemaining(video.expires_at)}" data-resolution="${video.resolution}" data-has-password="${video.has_password}" data-show-in-gallery="${video.show_in_gallery}">Edit</button>
                     <button class="delete-button" data-share-id="${video.share_id}">Delete</button>
                 </td>
             `;
@@ -287,12 +290,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const videoName = e.target.getAttribute('data-video-name');
                 const daysValid = e.target.getAttribute('data-days-valid');
                 const resolution = e.target.getAttribute('data-resolution');
+                const showInGallery = e.target.getAttribute('data-show-in-gallery') === 'true';
                 
                 editShareIdInput.value = shareId;
                 editVideoNameInput.value = videoName;
                 editDaysValidInput.value = Math.max(1, parseInt(daysValid) || 7);
                 editResolutionInput.value = resolution;
                 editSharePasswordInput.value = '';
+                editShowInGalleryInput.checked = showInGallery;
                 
                 editModal.style.display = 'block';
                 clearMessages();
@@ -326,7 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stash_video_id: 0,
             days_valid: parseInt(editDaysValidInput.value, 10),
             resolution: editResolutionInput.value,
-            password: editSharePasswordInput.value || null
+            password: editSharePasswordInput.value || null,
+            show_in_gallery: editShowInGalleryInput.checked
         };
 
         if (!updatedData.video_name || isNaN(updatedData.days_valid) || !updatedData.resolution) {
