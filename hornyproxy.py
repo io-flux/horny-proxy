@@ -23,6 +23,18 @@ import argparse
 from threading import Lock
 import warnings
 from passlib.exc import PasslibSecurityWarning
+import json
+from jinja2 import Template
+# ------------------------------------------------------------------
+# Jinja2 helper (one global Environment – auto-escape HTML)
+# ------------------------------------------------------------------
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+TEMPLATES = Environment(
+        loader=FileSystemLoader("static"),
+        autoescape=select_autoescape(["html", "xml"])
+).get_template               # we'll call TEMPLATES("file.html")
+
+from typing import Optional
 
 # Set up logging (will be reconfigured in main)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -188,9 +200,86 @@ def generate_m3u8_file(share_id: str, stash_video_id: int, resolution: str):
         logger.error(f"Error generating .m3u8 file for share_id={share_id}: {e}")
         return False
 
-# Root redirect to admin panel
-@app.get("/", response_class=RedirectResponse)
-async def root():
+# Fetch and cache thumbnail from Stash
+def fetch_and_cache_thumbnail(share_id: str, stash_video_id: int):
+    thumbnail_url = f"{STASH_SERVER}/scene/{stash_video_id}/screenshot?apikey={STASH_API_KEY}"
+    thumbnail_path = SHARES_DIR / f"{share_id}.jpg"
+    try:
+        if not thumbnail_path.exists():
+            response = requests.get(thumbnail_url)
+            if response.status_code == 200:
+                with open(thumbnail_path, "wb") as f:
+                    f.write(response.content)
+                logger.info(f"Cached thumbnail for share_id={share_id} at {thumbnail_path}")
+            else:
+                logger.error(f"Failed to fetch thumbnail for share_id={share_id}: status={response.status_code}")
+                return None
+        return f"/static/shares/{share_id}.jpg"
+    except Exception as e:
+        logger.error(f"Error fetching thumbnail for share_id={share_id}: {e}")
+        return None
+
+# Root endpoint for gallery of active, non-password-protected shares
+@app.get("/", response_class=HTMLResponse)
+async def gallery():
+    db = SessionLocal()
+    try:
+        # Get current time for expiration check
+        current_time = datetime.datetime.now(timezone.utc)
+        # Query for active, non-password-protected shares
+        videos = db.query(SharedVideo).filter(
+            SharedVideo.expires_at > current_time,
+            SharedVideo.password_hash == None
+        ).all()
+        
+        # Read the gallery template
+        with open("static/gallery.html") as f:
+            html_template = Template(f.read())
+        
+        # Generate video cards for the gallery
+        video_cards = []
+        for video in videos:
+            thumbnail_url = fetch_and_cache_thumbnail(video.share_id, video.stash_video_id)
+            video_cards.append({
+                "share_id": video.share_id,
+                "video_name": video.video_name,
+                "share_url": f"/share/{video.share_id}",
+                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg"
+            })
+        
+        # Determine logo path and srcset (prefer localized, fallback to static)
+        if os.path.exists("static/localized/logo.png"):
+            logo_path = "/static/localized/logo.png"
+            srcset = "/static/localized/logo.png 1x"
+            if os.path.exists("static/localized/logo@2x.png"):
+                srcset += ", /static/localized/logo@2x.png 2x"
+            if os.path.exists("static/localized/logo@3x.png"):
+                srcset += ", /static/localized/logo@3x.png 3x"
+        else:
+            logo_path = "/static/logo.png"
+            srcset = "/static/logo.png 1x"
+            if os.path.exists("static/logo@2x.png"):
+                srcset += ", /static/logo@2x.png 2x"
+            if os.path.exists("static/logo@3x.png"):
+                srcset += ", /static/logo@3x.png 3x"
+        
+        # Render the HTML with video data using jinja2
+        html_content = html_template.render(
+            logo_path=logo_path,
+            srcset=srcset,
+            disclaimer=DISCLAIMER,
+            video_cards=video_cards
+        )
+        return HTMLResponse(content=html_content)
+    except Exception as e:
+        logger.error(f"Error displaying gallery: {e}")
+        raise HTTPException(status_code=500, detail="Failed to display gallery")
+    finally:
+        db.close()
+
+# Admin panel redirect
+@app.get("/__admin", response_class=RedirectResponse)
+async def admin_panel():
     return RedirectResponse(url="/static/admin.html")
 
 # Login endpoint
@@ -308,90 +397,90 @@ async def delete_share(share_id: str, current_user: str = Depends(get_current_us
     finally:
         db.close()
 
-# Stream video via share link
-@app.get("/share/{share_id}", response_class=HTMLResponse)
-async def stream_shared_video(share_id: str, password_verified: bool = False, request: Request = None):
+# ------------------------------------------------------------------
+#  /share/{share_id}  (single, Jinja2 only)
+# ------------------------------------------------------------------
+@app.get("/share/{share_id}", response_class=HTMLResponse, response_model=None)
+async def share_page(share_id: str,
+                     password_verified: bool = False,
+                     request=None):
     db = SessionLocal()
     try:
-        video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
+        video = db.query(SharedVideo).filter_by(share_id=share_id).first()
         if not video:
-            # Do not log non-existent shares
-            raise HTTPException(status_code=404, detail="Share link not found")
-        # Log only once per visitor per share
-        if request is not None:
-            visitor_ip = request.client.host
-            key = (visitor_ip, share_id)
+            raise HTTPException(status_code=404,
+                                detail="Share link not found")
+
+        if request:                               # first-time visitor log
+            ip = request.client.host
             with visitor_log_lock:
-                if key not in visitor_log_set:
-                    logger.info(f"Visitor {visitor_ip} requested share_id={share_id} ({video.video_name})")
-                    visitor_log_set.add(key)
-        expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
-        if expires_at_aware < datetime.datetime.now(timezone.utc):
-            raise HTTPException(status_code=403, detail="Share link has expired")
-        # Check if password is required
+                if (ip, share_id) not in visitor_log_set:
+                    logger.info(f"Visitor {ip} requested {share_id}")
+                    visitor_log_set.add((ip, share_id))
+
+        if video.expires_at.replace(tzinfo=timezone.utc) \
+                < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403,
+                                detail="Share link has expired")
+
+        # password gate -------------------------------------------------
         if video.password_hash and not password_verified:
-            with open("static/password-prompt.html") as f:
-                html_template = f.read()
-            html_content = html_template.format(
-                video_name=video.video_name,
-                share_id=share_id
-            )
-            return HTMLResponse(content=html_content)
+            html = TEMPLATES("password-prompt.html").render(
+                    video_name=video.video_name,
+                    share_id=share_id)
+            return HTMLResponse(html)
+
+        # count hit BEFORE showing page
         video.hits += 1
         db.commit()
-        logger.info(f"Video streamed: share_id={share_id}, hits={video.hits}")
-        # Determine logo path and srcset (prefer localized, fallback to static)
+
+        # logo / srcset -------------------------------------------------
         if os.path.exists("static/localized/logo.png"):
             logo_path = "/static/localized/logo.png"
-            srcset = "/static/localized/logo.png 1x"
-            if os.path.exists("static/localized/logo@2x.png"):
-                srcset += ", /static/localized/logo@2x.png 2x"
-            if os.path.exists("static/localized/logo@3x.png"):
-                srcset += ", /static/localized/logo@3x.png 3x"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png")
+                 and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png")
+                 and "/static/localized/logo@3x.png 3x"] if p)
         else:
             logo_path = "/static/logo.png"
-            srcset = "/static/logo.png 1x"
-            if os.path.exists("static/logo@2x.png"):
-                srcset += ", /static/logo@2x.png 2x"
-            if os.path.exists("static/logo@3x.png"):
-                srcset += ", /static/logo@3x.png 3x"
-        with open("static/video-player.html") as f:
-            html_template = f.read()
-        html_content = html_template.format(
-            video_name=video.video_name,
-            share_id=share_id,
-            logo_path=logo_path,
-            srcset=srcset,
-            disclaimer=DISCLAIMER
-        )
-        return HTMLResponse(content=html_content)
-    except Exception as e:
-        logger.error(f"Error streaming video: {e}")
-        raise HTTPException(status_code=500, detail="Failed to stream video")
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png")
+                 and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png")
+                 and "/static/logo@3x.png 3x"] if p)
+
+        html = TEMPLATES("video-player.html").render(
+                video_name = video.video_name,
+                share_id   = share_id,
+                logo_path  = logo_path,
+                srcset     = srcset,
+                disclaimer = DISCLAIMER)
+        return HTMLResponse(html)
+
     finally:
         db.close()
 
-# Verify password for share
-@app.post("/share/{share_id}/verify", response_class=HTMLResponse)
-async def verify_share_password(share_id: str, password: str = Form(...)):
+# ------------------------------------------------------------------
+#  password verification – just redirect, no manual HTML
+# ------------------------------------------------------------------
+@app.post("/share/{share_id}/verify")
+async def verify_password(share_id: str, password: str = Form(...)):
     db = SessionLocal()
     try:
-        video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
-        if not video:
-            raise HTTPException(status_code=404, detail="Share link not found")
-        if not video.password_hash or not pwd_context.verify(password, video.password_hash):
-            raise HTTPException(status_code=401, detail="Incorrect password")
-        
-        # Redirect to video page with verification
-        return RedirectResponse(url=f"/share/{share_id}?password_verified=true", status_code=303)
-    except HTTPException as http_exc:
-        logger.warning(f"Password verification failed: {http_exc.detail}")
-        raise http_exc
-    except Exception as e:
-        logger.error(f"Error verifying password: {e}")
-        raise HTTPException(status_code=500, detail="Failed to verify password")
+        vid = db.query(SharedVideo).filter_by(share_id=share_id).first()
+        if not vid or not vid.password_hash \
+           or not pwd_context.verify(password, vid.password_hash):
+            raise HTTPException(status_code=401,
+                                detail="Incorrect password")
     finally:
         db.close()
+    # success → 303 to player page with flag; share_page will skip prompt
+    return RedirectResponse(f"/share/{share_id}?password_verified=true",
+                            status_code=303)
+
 
 # Serve static .m3u8 file
 @app.get("/share/{share_id}/stream.m3u8")

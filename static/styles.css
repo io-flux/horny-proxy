@@ -1,191 +1,616 @@
-body {
-    background-color: #0d0d1a; /* Very dark blue/black */
-    color: #99ccff; /* Light cyan/blue */
-    font-family: 'Courier New', Courier, monospace; /* Hacker-y font */
-    font-size: 15px; /* Slightly smaller base font */
-    margin: 0;
-    padding: 20px;
-}
+/*
+ * Combined & Refined Styles
+ * Theme: Sleek, Modern, Subdued Hacker / Cyber
+ * Based on new styles.css color palette and structure,
+ * incorporating elements and structure from original styles.css and video-player-theme.css.
+ */
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #1a1a2e; /* Darker blue/purple */
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2); /* Cyan glow */
-}
+ @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
 
-h1, h2, h3 {
-    color: #00ffff; /* Bright cyan for headings */
-    margin: 10px 0;
-    font-size: 16px;
-}
-
-.grid-form {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    gap: 10px;
-    align-items: center;
-}
-
-.grid-form label {
-    text-align: right;
-    font-size: 11px; /* Smaller label font */
-}
-
-.grid-form input, .grid-form select, .grid-form button {
-    width: 100%;
-    padding: 8px;
-    margin: 0;
-    border: 1px solid #2c3e50; /* Dark blue/gray border */
-    border-radius: 4px;
-    background-color: #1f1f38; /* Darker input background */
-    color: #99ccff; /* Main text color */
-    font-size: 11px; /* Smaller input font */
-    transition: border-color 0.3s;
-}
-
-.grid-form input:focus, .grid-form select:focus {
-    border-color: #00ffff; /* Cyan outline on focus */
-    outline: none;
-}
-
-.grid-form select {
-    appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%2399ccff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); /* New arrow color */
-    background-repeat: no-repeat;
-    background-position: right 8px top 50%;
-    padding-right: 24px;
-}
-
-.grid-form input[type="number"] {
-    -webkit-appearance: none;
-    -moz-appearance: textfield;
-    appearance: textfield;
-}
-
-.grid-form input[type="number"]::-webkit-inner-spin-button,
-.grid-form input[type="number"]::-webkit-outer-spin-button {
-    display: none;
-}
-
-.input-group {
-    display: flex;
-    gap: 10px;
-}
-
-.input-group input {
-    flex: 1;
-}
-
-.input-group button {
-    width: auto;
-}
-
-button {
-    background-color: #2c3e50; /* Dark blue/gray button */
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background-color 0.3s, box-shadow 0.3s;
-}
-
-button:hover {
-    background-color: #39ff14; /* Electric lime on hover */
-    box-shadow: 0 0 10px rgba(57, 255, 20, 0.5); /* Lime glow */
-}
-
-.error-message {
-    color: #ff3333; /* Neon red for errors */
-    font-size: 12px;
-    margin: 5px 0;
-}
-
-.success-message {
-    color: #99ccff; /* Main text color for success */
-    font-size: 12px;
-    margin: 5px 0;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #2c3e50; /* Dark blue/gray border */
-}
-
-th {
-    background-color: #1f1f38; /* Input background color */
-    color: #00ffff; /* Heading color for headers */
-}
-
-td a {
-    color: #99ccff; /* Main text color */
-    text-decoration: none;
-}
-
-td a:hover {
-    color: #39ff14; /* Lime hover */
-}
-
-.copy-button, .edit-button, .delete-button {
-    margin: 0 5px;
-    padding: 5px 10px;
-    font-size: 12px;
-}
-
-#edit-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #1a1a2e; /* New container color */
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); /* Cyan glow */
-    z-index: 1000;
-    animation: fadeIn 0.3s ease-in;
-}
-
-#edit-modal .grid-form {
-    grid-template-columns: 120px 1fr;
-}
-
-.modal-buttons {
-    grid-column: span 2;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.logo {
-    display: block;
-    margin: 0 auto 20px;
-    max-width: 700px; /* Much larger logo */
-}
-
-.video-container {
-    margin: 20px 0;
-    text-align: center;
-}
-
-.video-js {
-    background-color: #0d0d1a; /* New body background */
-}
-
-.disclaimer {
-    font-size: 9px;
-    color: #99ccff; /* Main text color */
-    text-align: center;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, -60%); }
-    to { opacity: 1; transform: translate(-50%, -50%); }
-}
+ /* --- Base Styles --- */
+ body {
+     font-family: 'Roboto Mono', monospace;
+     font-size: 14px;
+     margin: 0;
+     padding: 0; /* Container handles padding */
+     background-color: #0a0e17; /* Very dark blue */
+     color: #e0e0e0; /* Light gray */
+     line-height: 1.6;
+ }
+ 
+ .container {
+     max-width: 1400px; /* Wider container */
+     margin: 0 auto;
+     padding: 30px; /* Generous padding */
+     background-color: #141925; /* Darker blue */
+     border-radius: 8px;
+     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Subdued shadow */
+     min-height: calc(100vh - 60px); /* Ensure content fills screen height */
+ }
+ 
+ /* --- Header --- */
+ header {
+     background-color: #1e1e2f; /* Input/Table header background */
+     color: #e0e0e0; /* Light gray text */
+     text-align: center;
+     padding: 20px 0;
+     margin-bottom: 30px;
+     border-radius: 8px;
+ }
+ 
+ header img {
+     max-height: 40px; /* Consistent logo size */
+     margin-bottom: 10px;
+     display: block; /* Ensure margin auto works */
+     margin-left: auto;
+     margin-right: auto;
+ }
+ 
+ /* --- Logo (Used directly in container on video player page) --- */
+ .logo {
+     max-height: 40px; /* Consistent logo size */
+     margin-bottom: 20px; /* Added margin from original styles */
+     display: block; /* Make it a block element for margin auto */
+     margin-left: auto; /* Center the block element */
+     margin-right: auto; /* Center the block element */
+     /* Add margin top for consistency if needed, e.g., margin-top: 20px; */
+ }
+ 
+ 
+ /* --- Typography --- */
+ h1, h2, h3 {
+     color: #4caf50; /* Green accent */
+     font-weight: 500;
+     margin-bottom: 20px;
+     text-transform: uppercase;
+     letter-spacing: 1px;
+     margin-top: 10px; /* Added margin top for spacing consistency */
+ }
+ 
+ h1 {
+     font-size: 1.5rem;
+ }
+ 
+ h2 {
+     font-size: 1.2rem;
+ }
+ 
+ h3 {
+     font-size: 1rem;
+ }
+ 
+ .disclaimer {
+     text-align: center;
+     margin: 30px 0;
+     color: #757575; /* Gray text */
+     font-size: 0.85rem;
+     max-width: 800px;
+     margin-left: auto;
+     margin-right: auto;
+ }
+ 
+ /* --- Forms --- */
+ .grid-form {
+     display: grid;
+     grid-template-columns: 1fr 2fr; /* Updated grid ratio */
+     gap: 20px; /* Increased gap */
+     margin-bottom: 30px;
+     max-width: 600px; /* Constrain form width */
+     margin-left: auto; /* Center form if max-width is set */
+     margin-right: auto;
+ }
+ 
+ .grid-form label {
+     text-align: right;
+     padding-top: 10px; /* Align baseline with input */
+     color: #a0a0a0; /* Lighter gray for labels */
+     font-size: 0.9rem;
+ }
+ 
+ .grid-form input, .grid-form select, .grid-form button {
+     width: 100%; /* Ensure form elements fill grid column */
+     padding: 10px;
+     margin: 0; /* Reset default margin */
+     border: 1px solid #2a2a2a; /* Dark border */
+     background-color: #1e1e2f; /* Input background */
+     color: #e0e0e0; /* Light gray text */
+     border-radius: 4px;
+     font-size: 0.9rem;
+     transition: border-color 0.3s ease, background-color 0.3s ease;
+ }
+ 
+ .grid-form input:focus, .grid-form select:focus {
+     outline: none; /* Remove default outline */
+     border-color: #4caf50; /* Green accent on focus */
+     background-color: #252540; /* Slightly darker background on focus */
+ }
+ 
+ .grid-form select {
+     appearance: none; /* Remove default select arrow */
+     cursor: pointer;
+     /* Optional: Add custom arrow via background-image if desired, consistent with theme */
+     /* background-image: url('data:image/svg+xml;utf8,<svg fill=\"%23e0e0e0\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); */
+     /* background-repeat: no-repeat; */
+     /* background-position: right 10px top 50%; */
+     /* padding-right: 30px; */
+ }
+ 
+ .grid-form input[type="number"] {
+     -webkit-appearance: none; /* Remove Safari spin buttons */
+     -moz-appearance: textfield; /* Keep Firefox spin buttons by default */
+     appearance: textfield; /* Remove default spin buttons */
+ }
+ 
+ /* Explicitly hide spin buttons for all browsers if desired */
+ .grid-form input[type="number"]::-webkit-inner-spin-button,
+ .grid-form input[type="number"]::-webkit-outer-spin-button {
+     appearance: none;
+     margin: 0;
+     display: none; /* Ensure hiding */
+ }
+ 
+ .input-group {
+     display: flex;
+     gap: 10px;
+     /* This group takes up the input's grid column */
+     grid-column: 2; /* Span the second column */
+ }
+ 
+ .input-group input {
+     flex: 1; /* Allow input to grow */
+     width: auto; /* Override 100% from parent rule */
+ }
+ 
+ .input-group button {
+     width: auto; /* Allow button to size based on content */
+     background-color: #4caf50; /* Green button */
+ }
+ 
+ /* --- Buttons (General) --- */
+ button {
+     padding: 10px 20px;
+     background-color: #3d3d3d; /* Dark gray button */
+     color: #e0e0e0; /* Light gray text */
+     border: none;
+     border-radius: 4px;
+     cursor: pointer;
+     font-size: 0.9rem;
+     transition: background-color 0.3s ease;
+     text-transform: uppercase;
+ }
+ 
+ button:hover {
+     background-color: #4caf50; /* Green accent on hover */
+ }
+ 
+ /* Specific button styles from admin panel */
+ #logout-button {
+     background-color: #d32f2f; /* Red */
+     margin-bottom: 30px;
+ }
+ 
+ #logout-button:hover {
+     background-color: #ff5252; /* Brighter red on hover */
+ }
+ 
+ #refresh-shares {
+     background-color: #1e1e2f; /* Input background color */
+     border: 1px solid #4caf50; /* Green border */
+     color: #4caf50; /* Green text */
+     margin-bottom: 20px;
+ }
+ 
+ #refresh-shares:hover {
+     background-color: #4caf50; /* Green background on hover */
+     color: #e0e0e0; /* Light gray text on hover */
+ }
+ 
+ /* Action buttons in table */
+ .copy-button, .edit-button, .delete-button {
+     margin-right: 10px; /* Spacing between buttons */
+     padding: 6px 12px; /* Smaller padding */
+     font-size: 0.8rem; /* Smaller font size */
+     /* Inherits general button styles otherwise */
+ }
+ 
+ .delete-button {
+     background-color: #d32f2f; /* Red */
+ }
+ 
+ .delete-button:hover {
+     background-color: #ff5252; /* Brighter red on hover */
+ }
+ 
+ 
+ /* --- Messages --- */
+ .error-message {
+     color: #ff5252; /* Red */
+     font-size: 0.85rem;
+     margin-top: 10px;
+     max-width: 600px; /* Align with form width */
+     margin-left: auto; /* Center message */
+     margin-right: auto;
+ }
+ 
+ .success-message {
+     color: #4caf50; /* Green accent */
+     font-size: 0.85rem;
+     margin-top: 10px;
+     max-width: 600px; /* Align with form width */
+     margin-left: auto; /* Center message */
+     margin-right: auto;
+ }
+ 
+ 
+ /* --- Table --- */
+ table {
+     width: 100%;
+     border-collapse: collapse;
+     margin-top: 20px;
+     margin-bottom: 30px;
+ }
+ 
+ th, td {
+     padding: 12px 15px; /* Increased padding */
+     text-align: left;
+     border-bottom: 1px solid #2a2a2a; /* Dark border */
+     font-size: 0.9rem;
+ }
+ 
+ th {
+     background-color: #1e1e2f; /* Input/Table header background */
+     color: #4caf50; /* Green accent */
+     text-transform: uppercase;
+     font-weight: 500; /* Match heading weight */
+ }
+ 
+ td a {
+     color: #4caf50; /* Green accent for links */
+     text-decoration: none;
+     transition: color 0.3s ease;
+ }
+ 
+ td a:hover {
+     color: #66bb6a; /* Lighter green on hover */
+     text-decoration: underline;
+ }
+ 
+ 
+ /* --- Modal --- */
+ #edit-modal {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent overlay */
+     display: flex; /* Use flexbox to center content */
+     justify-content: center;
+     align-items: center;
+     z-index: 1000; /* High z-index */
+     backdrop-filter: blur(5px); /* Blur background */
+     /* Animation is handled by keyframes */
+ }
+ 
+ /* Styling for the form content within the modal */
+ #edit-modal .grid-form {
+     background-color: #141925; /* Container background */
+     padding: 30px;
+     border-radius: 8px;
+     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Consistent shadow */
+     /* Override main grid-form max-width and margins for modal */
+     max-width: 500px; /* Adjust modal form width */
+     margin: 0;
+     /* Keep grid layout, adjust column ratio if needed for modal */
+     grid-template-columns: 1fr 2fr; /* Using the same ratio as main form */
+     gap: 20px; /* Consistent gap */
+ }
+ 
+ /* Override input group within modal to align with new grid ratio */
+ #edit-modal .grid-form .input-group {
+      grid-column: 2; /* Ensure it spans the second column */
+ }
+ 
+ 
+ .modal-buttons {
+     grid-column: 2; /* Place buttons in the second column */
+     display: flex;
+     gap: 10px;
+     margin-top: 20px;
+     justify-content: flex-end; /* Align buttons to the right */
+ }
+ 
+ 
+ /* --- Login/Admin Sections --- */
+ #login-section, #admin-content {
+     /* Initial state handled by inline style="display: none;" in HTML */
+     animation: fadeIn 0.5s ease-out; /* Apply fade-in animation */
+ }
+ 
+ 
+ /* --- Gallery Styles --- */
+ .gallery {
+     display: grid;
+     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
+     gap: 30px; /* Gap between cards */
+     padding: 30px 0;
+     max-width: 1400px; /* Match container max-width */
+     margin: 0 auto;
+ }
+ 
+ .video-card {
+     background-color: #1e1e2f; /* Input background color */
+     border-radius: 8px;
+     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Card shadow */
+     overflow: hidden;
+     transition: transform 0.3s ease, box-shadow 0.3s ease;
+     margin: 0 auto; /* Center cards if max-width is used (not needed with auto-fill grid) */
+ }
+ 
+ .video-card:hover {
+     transform: translateY(-8px); /* Lift effect on hover */
+     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* Increased shadow on hover */
+ }
+ 
+ .video-card a {
+     text-decoration: none;
+     color: inherit; /* Inherit color from parent */
+     display: block; /* Make the entire card clickable */
+ }
+ 
+ .video-card img {
+     width: 100%;
+     height: 200px; /* Fixed height for thumbnails */
+     object-fit: cover; /* Cover the area without distorting aspect ratio */
+     background-color: #1a1a1a; /* Dark placeholder background */
+     display: block; /* Remove potential bottom space */
+ }
+ 
+ .video-card .title {
+     padding: 15px;
+     text-align: center;
+     font-size: 0.9rem;
+     font-weight: 400;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis; /* Truncate long titles */
+     color: #e0e0e0; /* Light gray text */
+ }
+ 
+ #loading {
+     text-align: center;
+     padding: 20px;
+     color: #757575; /* Gray text */
+     font-size: 0.85rem;
+     display: none; /* Hidden by default */
+ }
+ 
+ 
+ /* --- Video Player Styles (Video.js Integration) --- */
+ 
+ .video-container {
+     margin: 20px 0; /* Margin from original styles */
+     text-align: center; /* Center the player */
+     max-width: 1000px; /* Max width from new styles */
+     margin-left: auto; /* Center container */
+     margin-right: auto;
+ }
+ 
+ /* Ensure video player adheres to container width and aspect ratio, AND IS CENTERED */
+ .video-js {
+     /* Styles from new player theme */
+     color: #e0e0e0; /* Light gray for text/icons - Using main text color for UI */
+     /* Styles from original player theme */
+     max-width: 1920px; /* Constrain video size - useful if container is wider than 1000px */
+     width: 100%; /* Fill parent width (up to max-width set on .video-container) */
+     aspect-ratio: 16 / 9; /* Maintain 16:9 aspect ratio */
+     /* background-color: #0a0e17; /* Optional: Match body background if no poster */
+     background-color: #000; /* Default black background */
+     margin: 0 auto; /* <-- ADDED: Center the block-level player */
+ }
+ 
+ .video-js .vjs-control-bar {
+     /* Combined styles */
+     background-color: rgba(20, 25, 37, 0.85); /* Darker blue, slightly transparent (using container color) */
+     border-top: 1px solid #4caf50; /* Green accent top border */
+     height: 60px; /* Larger control bar from original player theme */
+     border-radius: 0 0 8px 8px; /* Rounded corners from original player theme */
+ }
+ 
+ /* Play button, volume, fullscreen etc. */
+ .video-js .vjs-control:not(.vjs-disabled):hover,
+ .video-js .vjs-big-play-button:hover {
+     color: #39ff14; /* Electric lime for hover from new player theme */
+     text-shadow: 0 0 5px rgba(57, 255, 20, 0.7); /* Glow effect from new player theme */
+ }
+ 
+ .video-js .vjs-big-play-button {
+     /* Styles from new player theme */
+     background-color: rgba(20, 25, 37, 0.7); /* Darker blue, transparent */
+     border: 2px solid #4caf50; /* Green accent border */
+     border-radius: 50%;
+     width: 2em;
+     height: 2em;
+     line-height: 2em;
+     margin-top: -1em;
+     margin-left: -1em;
+     /* Ensure it's visible and centered within its position */
+     display: flex;
+     justify-content: center;
+     align-items: center;
+ }
+ 
+ .video-js .vjs-big-play-button .vjs-icon-placeholder:before {
+     font-size: 1.2em; /* Relative icon size */
+     line-height: inherit; /* Center icon */
+ }
+ 
+ /* Progress bar */
+ .video-js .vjs-play-progress,
+ .video-js .vjs-volume-level {
+     background-color: #4caf50; /* Green accent for progress */
+ }
+ 
+ .video-js .vjs-slider {
+     background-color: rgba(44, 62, 80, 0.7); /* Darker slider background from new player theme */
+ }
+ 
+ .video-js .vjs-load-progress {
+     background: rgba(76, 175, 80, 0.3); /* Transparent green for load progress */
+ }
+ 
+ .video-js .vjs-load-progress div {
+     background: rgba(76, 175, 80, 0.5); /* Slightly more opaque for loaded part */
+ }
+ 
+ .video-js .vjs-progress-control .vjs-progress-holder {
+     height: 10px; /* Thicker progress bar from original player theme */
+ }
+ 
+ 
+ /* Time display */
+ .video-js .vjs-time-control {
+     color: #e0e0e0; /* Light gray time text */
+     font-size: 0.9rem; /* Match main font size */
+ }
+ 
+ /* Tooltips */
+ .video-js .vjs-time-tooltip,
+ .vjs-progress-tooltip { /* Corrected selector to match common pattern */
+     background-color: #1e1e2f; /* Input background color */
+     color: #e0e0e0; /* Light gray text */
+     border-radius: 4px;
+     padding: 5px 8px;
+     font-size: 0.8rem;
+ }
+ 
+ 
+ /* Menu buttons (e.g., for playback rates, subtitles) */
+ .video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item:hover,
+ .video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item.vjs-selected {
+     background-color: #252540; /* Darker background on hover/selected */
+     color: #4caf50; /* Green accent for selected/hovered items */
+ }
+ 
+ .video-js .vjs-menu-button-popup .vjs-menu {
+     background-color: rgba(20, 25, 37, 0.95); /* Darker blue, transparent */
+     border: 1px solid #4caf50; /* Green accent border */
+     border-radius: 4px;
+     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+ }
+ 
+ .video-js .vjs-button > .vjs-icon-placeholder:before {
+     font-size: 1.2em; /* Icon size relative to control size */
+     line-height: 1.8; /* Adjust line height to help centering */
+ }
+ 
+ 
+ /* Hide unneeded controls (from both original themes) */
+ .video-js .vjs-text-track-display,
+ .video-js .vjs-captions-button,
+ .video-js .vjs-subtitles-button,
+ .video-js .vjs-audio-button,
+ .vjs-chapters-button, /* Corrected selector */
+ .video-js .vjs-descriptions-button {
+     display: none !important;
+ }
+ 
+ 
+ /* --- Animations --- */
+ @keyframes fadeIn {
+     from { opacity: 0; transform: translateY(10px); } /* Fade and slight move up */
+     to { opacity: 1; transform: translateY(0); }
+ }
+ 
+ 
+ /* --- Responsive Design (from new styles.css) --- */
+ @media (max-width: 768px) {
+     .container {
+         padding: 20px; /* Slightly less padding on smaller screens */
+     }
+ 
+     .grid-form {
+         grid-template-columns: 1fr; /* Stack form elements */
+         gap: 10px;
+         max-width: 100%; /* Allow form to fill container */
+     }
+ 
+     .grid-form label {
+         text-align: left; /* Align labels left when stacked */
+         padding-top: 0; /* Remove top padding when stacked */
+     }
+ 
+      .input-group {
+         grid-column: 1; /* Ensure input group takes the full column */
+      }
+ 
+     #edit-modal .grid-form {
+          grid-template-columns: 1fr; /* Stack modal form elements */
+          gap: 10px;
+          max-width: 95%; /* Adjust modal width */
+     }
+ 
+     #edit-modal .grid-form .input-group {
+          grid-column: 1; /* Ensure input group takes the full column in modal */
+     }
+ 
+     .modal-buttons {
+         grid-column: 1; /* Ensure buttons take the full column */
+         justify-content: center; /* Center buttons when stacked */
+     }
+ 
+     .gallery {
+         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjust min width for cards */
+         gap: 20px;
+     }
+ 
+     .video-card img {
+         height: 180px; /* Adjust thumbnail height */
+     }
+ 
+     th, td {
+         padding: 10px; /* Reduce table padding */
+     }
+ }
+ 
+ @media (max-width: 480px) {
+     .container {
+         padding: 15px;
+     }
+ 
+     h1 {
+         font-size: 1.3rem;
+     }
+ 
+     h2 {
+         font-size: 1.1rem;
+     }
+ 
+     button {
+         padding: 8px 16px; /* Smaller button padding */
+         font-size: 0.8rem;
+     }
+ 
+     .grid-form input, .grid-form select, .grid-form button {
+           padding: 8px;
+           font-size: 0.8rem;
+     }
+ 
+      #edit-modal .grid-form {
+           padding: 20px;
+      }
+ 
+ 
+     .gallery {
+           gap: 15px;
+      }
+ 
+     .video-card img {
+         height: 140px; /* Further adjust thumbnail height */
+     }
+ 
+     th, td {
+         padding: 8px; /* Further reduce table padding */
+     }
+ }
+ 

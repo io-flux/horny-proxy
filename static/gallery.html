@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header>
+        <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo">
+        <h1>Video Gallery</h1>
+    </header>
+
+    <div class="disclaimer">
+        {{ disclaimer }}
+    </div>
+
+    <div class="gallery" id="gallery">
+        <!-- Video cards will be inserted here by JavaScript -->
+    </div>
+
+    <div id="loading">Loading more videos...</div>
+
+    <script>
+        // Video cards data passed from server
+        // Use JSON.parse to handle the data if the templating engine
+        // outputs it as a JSON string literal (e.g., "[...]" instead of [...])
+        const videoCards = JSON.parse('{{ video_cards | tojson | safe }}');
+
+        let currentIndex = 0;
+        const cardsPerPage = 12;
+
+        function loadMoreCards() {
+            const gallery = document.getElementById('gallery');
+            const loading = document.getElementById('loading');
+
+            // Only show loading if there are more cards to load
+            if (currentIndex < videoCards.length) {
+                 loading.style.display = 'block';
+            } else {
+                 loading.style.display = 'none'; // Hide if no more cards
+            }
+
+
+            setTimeout(() => {
+                const nextBatch = videoCards.slice(currentIndex, currentIndex + cardsPerPage);
+                nextBatch.forEach(card => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'video-card';
+                    cardElement.innerHTML = `
+                        <a href="${card.share_url}">
+                            <img src="${card.thumbnail_url}" alt="Video thumbnail" onerror="this.src='/static/default_thumbnail.jpg';this.onerror=null;">
+                            <div class="title">${card.video_name}</div>
+                        </a>
+                    `;
+                    gallery.appendChild(cardElement);
+                });
+
+                currentIndex += cardsPerPage;
+                loading.style.display = 'none'; // Hide loading after batch is added
+
+                // Check if we need to load more content immediately after adding
+                checkAndLoadMore();
+            }, 100); // Reduced artificial delay for smoother loading
+        }
+
+        function checkAndLoadMore() {
+            // Only check and load if there are still cards not yet displayed
+            if (currentIndex < videoCards.length) {
+                 const scrollPosition = window.innerHeight + window.pageYOffset;
+                 const totalHeight = document.documentElement.scrollHeight;
+
+                 // If user has scrolled to 80% of the page, load more
+                 // Increased threshold slightly for better feel
+                 if (scrollPosition > totalHeight * 0.8) {
+                     loadMoreCards();
+                 }
+            }
+             // If all cards are loaded, ensure loading message is hidden
+             if (currentIndex >= videoCards.length) {
+                document.getElementById('loading').style.display = 'none';
+             }
+        }
+
+        // Initial load
+        loadMoreCards();
+
+        // Listen for scroll events
+        window.addEventListener('scroll', checkAndLoadMore);
+        window.addEventListener('resize', checkAndLoadMore); // Also check on resize
+    </script>
+</body>
+</html>
