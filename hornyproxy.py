@@ -125,6 +125,28 @@ class SharedVideo(Base):
     password_hash = Column(String, nullable=True)
     show_in_gallery = Column(Boolean, default=False)
 
+class SharedTag(Base):
+    __tablename__ = "shared_tags"
+    id = Column(Integer, primary_key=True, index=True)
+    share_id = Column(String, unique=True, index=True)
+    tag_name = Column(String)
+    stash_tag_id = Column(String)
+    expires_at = Column(DateTime(timezone=True))
+    hits = Column(Integer, default=0)
+    resolution = Column(String, default=DEFAULT_RESOLUTION)
+    password_hash = Column(String, nullable=True)
+    show_in_gallery = Column(Boolean, default=False)
+
+# Add this Pydantic model (add this after ShareVideoRequest)
+class ShareTagRequest(BaseModel):
+    tag_name: str
+    tag_id: str
+    days_valid: int = 7
+    resolution: Resolution = Field(default=Resolution[DEFAULT_RESOLUTION], description="Streaming resolution")
+    password: str | None = None
+    show_in_gallery: bool = False
+    custom_share_id: str | None = None
+
 Base.metadata.create_all(bind=engine)
 
 # Pydantic models
@@ -228,11 +250,19 @@ async def gallery():
     try:
         # Get current time for expiration check
         current_time = datetime.datetime.now(timezone.utc)
-        # Query for active, non-password-protected shares that are set to show in gallery
+        
+        # Query for active, non-password-protected video shares that are set to show in gallery
         videos = db.query(SharedVideo).filter(
             SharedVideo.expires_at > current_time,
             SharedVideo.password_hash == None,
             SharedVideo.show_in_gallery == True
+        ).all()
+        
+        # Query for active, non-password-protected tag shares that are set to show in gallery
+        tags = db.query(SharedTag).filter(
+            SharedTag.expires_at > current_time,
+            SharedTag.password_hash == None,
+            SharedTag.show_in_gallery == True
         ).all()
         
         # Read the gallery template
@@ -241,13 +271,34 @@ async def gallery():
         
         # Generate video cards for the gallery
         video_cards = []
+        
+        # Add individual video shares
         for video in videos:
             thumbnail_url = fetch_and_cache_thumbnail(video.share_id, video.stash_video_id)
             video_cards.append({
                 "share_id": video.share_id,
                 "video_name": video.video_name,
                 "share_url": f"/share/{video.share_id}",
-                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg"
+                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                "is_tag": False
+            })
+        
+        # Add tag shares
+        for tag in tags:
+            # Get the first video from this tag for the thumbnail
+            tag_videos = await get_videos_by_tag(tag.stash_tag_id, per_page=1)
+            if tag_videos:
+                first_video = tag_videos[0]
+                thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag.share_id, int(first_video["id"]))
+            else:
+                thumbnail_url = None
+            
+            video_cards.append({
+                "share_id": tag.share_id,
+                "video_name": f"Tag: {tag.tag_name}",
+                "share_url": f"/tag/{tag.share_id}",
+                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                "is_tag": True
             })
         
         # Determine logo path and srcset (prefer localized, fallback to static)
@@ -279,6 +330,184 @@ async def gallery():
         raise HTTPException(status_code=500, detail="Failed to display gallery")
     finally:
         db.close()
+
+async def find_tag_by_name(tag_name: str) -> dict | None:
+    """Find a tag by name and return its ID and details"""
+    stash_graphql_url = f"{STASH_SERVER}/graphql"
+    headers = {
+        "ApiKey": STASH_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    query = {
+        "operationName": "FindTags",
+        "variables": {
+            "filter": {
+                "q": tag_name,
+                "page": 1,
+                "per_page": 40,
+                "sort": "scenes_count",
+                "direction": "DESC"
+            },
+            "tag_filter": {}
+        },
+        "query": """
+            query FindTags($filter: FindFilterType, $tag_filter: TagFilterType) {
+                findTags(filter: $filter, tag_filter: $tag_filter) {
+                    count
+                    tags {
+                        id
+                        name
+                        scene_count
+                        __typename
+                    }
+                    __typename
+                }
+            }
+        """
+    }
+    
+    try:
+        logger.debug(f"Searching for tag: {tag_name}")
+        response = requests.post(stash_graphql_url, json=query, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("errors"):
+            logger.error(f"GraphQL error finding tag '{tag_name}': {data['errors']}")
+            return None
+        
+        tags = data.get("data", {}).get("findTags", {}).get("tags", [])
+        logger.debug(f"Found {len(tags)} tags matching '{tag_name}'")
+        
+        # Look for exact match first, then partial match
+        for tag in tags:
+            if tag["name"].lower() == tag_name.lower():
+                logger.info(f"Exact match found for tag '{tag_name}': ID {tag['id']}")
+                return tag
+        
+        # If no exact match, return first result if any
+        if tags:
+            logger.info(f"Partial match found for tag '{tag_name}': {tags[0]['name']} (ID {tags[0]['id']})")
+            return tags[0]
+        
+        logger.warning(f"No tags found matching '{tag_name}'")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error finding tag '{tag_name}': {e}")
+        return None
+
+async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 40) -> list:
+    """Get videos that have a specific tag"""
+    stash_graphql_url = f"{STASH_SERVER}/graphql"
+    headers = {
+        "ApiKey": STASH_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    query = {
+        "operationName": "FindScenes",
+        "variables": {
+            "filter": {
+                "q": "",
+                "page": page,
+                "per_page": per_page,
+                "sort": "date",
+                "direction": "DESC"
+            },
+            "scene_filter": {
+                "tags": {
+                    "value": [tag_id],
+                    "excludes": [],
+                    "modifier": "INCLUDES_ALL",
+                    "depth": -1
+                }
+            }
+        },
+        "query": """
+            query FindScenes($filter: FindFilterType, $scene_filter: SceneFilterType, $scene_ids: [Int!]) {
+                findScenes(filter: $filter, scene_filter: $scene_filter, scene_ids: $scene_ids) {
+                    count
+                    scenes {
+                        id
+                        title
+                        details
+                        paths {
+                            screenshot
+                            preview
+                            __typename
+                        }
+                        tags {
+                            id
+                            name
+                            __typename
+                        }
+                        performers {
+                            id
+                            name
+                            __typename
+                        }
+                        studio {
+                            id
+                            name
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+            }
+        """
+    }
+    
+    try:
+        logger.debug(f"Getting videos for tag ID: {tag_id}")
+        response = requests.post(stash_graphql_url, json=query, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("errors"):
+            logger.error(f"GraphQL error getting videos for tag {tag_id}: {data['errors']}")
+            return []
+        
+        scenes = data.get("data", {}).get("findScenes", {}).get("scenes", [])
+        
+        # Transform the data to a simpler format
+        videos = []
+        for scene in scenes:
+            video = {
+                "id": scene["id"],
+                "title": scene["title"],
+                "details": scene.get("details", ""),
+                "screenshot": scene["paths"]["screenshot"],
+                "preview": scene["paths"]["preview"],
+                "tags": [{"id": tag["id"], "name": tag["name"]} for tag in scene.get("tags", [])],
+                "performers": [{"id": p["id"], "name": p["name"]} for p in scene.get("performers", [])],
+                "studio": scene.get("studio", {}).get("name", "") if scene.get("studio") else ""
+            }
+            videos.append(video)
+        
+        logger.info(f"Found {len(videos)} videos for tag {tag_id}")
+        return videos
+        
+    except Exception as e:
+        logger.error(f"Error getting videos for tag {tag_id}: {e}")
+        return []
+
+async def get_videos_by_tag_name(tag_name: str, page: int = 1, per_page: int = 40) -> tuple[list, dict | None]:
+    """Get videos by tag name - returns (videos, tag_info)"""
+    logger.debug(f"Getting videos by tag name: {tag_name}")
+    
+    tag_info = await find_tag_by_name(tag_name)
+    if not tag_info:
+        logger.warning(f"Tag '{tag_name}' not found")
+        return [], None
+    
+    videos = await get_videos_by_tag(tag_info["id"], page, per_page)
+    logger.info(f"Retrieved {len(videos)} videos for tag '{tag_name}' (ID: {tag_info['id']})")
+    return videos, tag_info
+
 
 # Admin panel redirect
 @app.get("/__admin", response_class=RedirectResponse)
@@ -446,6 +675,9 @@ async def share_page(share_id: str, password_verified: bool = False, request: Re
         # count hit BEFORE showing page
         video.hits += 1
         db.commit()
+        
+        # Get full video details from Stash
+        video_details = await get_video_details(video.stash_video_id)
 
         # logo / srcset -------------------------------------------------
         if os.path.exists("static/localized/logo.png"):
@@ -470,7 +702,8 @@ async def share_page(share_id: str, password_verified: bool = False, request: Re
                 share_id   = share_id,
                 logo_path  = logo_path,
                 srcset     = srcset,
-                disclaimer = DISCLAIMER)
+                disclaimer = DISCLAIMER,
+                video_details = video_details)
         return HTMLResponse(html)
 
     finally:
@@ -495,84 +728,317 @@ async def verify_password(share_id: str, password: str = Form(...)):
                             status_code=303)
 
 
-# Serve static .m3u8 file
+
+# Function to cache thumbnails for tag videos
+def fetch_and_cache_tag_video_thumbnail(tag_share_id: str, video_id: int):
+    thumbnail_url = f"{STASH_SERVER}/scene/{video_id}/screenshot?apikey={STASH_API_KEY}"
+    thumbnail_path = SHARES_DIR / f"tag-{tag_share_id}-video-{video_id}.jpg"
+    try:
+        if not thumbnail_path.exists():
+            response = requests.get(thumbnail_url)
+            if response.status_code == 200:
+                with open(thumbnail_path, "wb") as f:
+                    f.write(response.content)
+                logger.info(f"Cached thumbnail for tag video {tag_share_id}/{video_id} at {thumbnail_path}")
+            else:
+                logger.error(f"Failed to fetch thumbnail for tag video {tag_share_id}/{video_id}: status={response.status_code}")
+                return None
+        return f"/static/shares/tag-{tag_share_id}-video-{video_id}.jpg"
+    except Exception as e:
+        logger.error(f"Error fetching thumbnail for tag video {tag_share_id}/{video_id}: {e}")
+        return None
+
+# Tag share page endpoint
+@app.get("/tag/{share_id}", response_class=HTMLResponse, response_model=None)
+async def tag_share_page(share_id: str, password_verified: bool = False, request: Request = None):
+    db = SessionLocal()
+    try:
+        tag_share = db.query(SharedTag).filter_by(share_id=share_id).first()
+        if not tag_share:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+
+        if request:  # first-time visitor log
+            ip = request.client.host
+            with visitor_log_lock:
+                if (ip, share_id) not in visitor_log_set:
+                    logger.info(f"Visitor {ip} requested tag share {share_id}")
+                    visitor_log_set.add((ip, share_id))
+
+        if tag_share.expires_at.replace(tzinfo=timezone.utc) < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="Tag share has expired")
+
+        # password gate
+        if tag_share.password_hash and not password_verified:
+            query_params = request.query_params if request else {}
+            url_password = query_params.get('pwd', '')
+            if url_password and pwd_context.verify(url_password, tag_share.password_hash):
+                password_verified = True
+            else:
+                html = TEMPLATES("password-prompt.html").render(
+                    video_name=f"Tag: {tag_share.tag_name}",
+                    share_id=share_id,
+                    url_password=url_password
+                )
+                return HTMLResponse(html)
+
+        # count hit BEFORE showing page
+        tag_share.hits += 1
+        db.commit()
+
+        # Get videos for this tag
+        videos = await get_videos_by_tag(tag_share.stash_tag_id)
+        
+        # Transform videos for gallery display with proxied thumbnails
+        video_cards = []
+        for video in videos:
+            thumbnail_url = fetch_and_cache_tag_video_thumbnail(share_id, int(video["id"]))
+            video_cards.append({
+                "share_id": f"tag-{share_id}-video-{video['id']}",
+                "video_name": video["title"],
+                "share_url": f"/tag/{share_id}/video/{video['id']}",
+                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg"
+            })
+
+        # logo / srcset
+        if os.path.exists("static/localized/logo.png"):
+            logo_path = "/static/localized/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png")
+                 and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png")
+                 and "/static/localized/logo@3x.png 3x"] if p)
+        else:
+            logo_path = "/static/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png")
+                 and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png")
+                 and "/static/logo@3x.png 3x"] if p)
+
+        # Use the gallery template
+        html = TEMPLATES("gallery.html").render(
+            logo_path=logo_path,
+            srcset=srcset,
+            disclaimer=DISCLAIMER,
+            video_cards=video_cards
+        )
+        return HTMLResponse(html)
+
+    finally:
+        db.close()
+
+# Individual video within a tag share
+@app.get("/tag/{share_id}/video/{video_id}", response_class=HTMLResponse, response_model=None)
+async def tag_video_page(share_id: str, video_id: int, request: Request = None):
+    db = SessionLocal()
+    try:
+        tag_share = db.query(SharedTag).filter_by(share_id=share_id).first()
+        if not tag_share:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+
+        if tag_share.expires_at.replace(tzinfo=timezone.utc) < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="Tag share has expired")
+
+        # Get video info from Stash
+        videos = await get_videos_by_tag(tag_share.stash_tag_id)
+        video = next((v for v in videos if int(v["id"]) == video_id), None)
+        
+        if not video:
+            raise HTTPException(status_code=404, detail="Video not found in this tag")
+
+        # logo / srcset
+        if os.path.exists("static/localized/logo.png"):
+            logo_path = "/static/localized/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png")
+                 and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png")
+                 and "/static/localized/logo@3x.png 3x"] if p)
+        else:
+            logo_path = "/static/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png")
+                 and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png")
+                 and "/static/logo@3x.png 3x"] if p)
+
+        html = TEMPLATES("video-player.html").render(
+            video_name=video["title"],
+            share_id=f"tag-{share_id}-video-{video_id}",  # This maps to the m3u8 URL
+            logo_path=logo_path,
+            srcset=srcset,
+            disclaimer=DISCLAIMER,
+            video_details=video)
+        return HTMLResponse(html)
+
+    finally:
+        db.close()
+
+# Updated serve_m3u8_file to handle both regular and tag video shares
 @app.get("/share/{share_id}/stream.m3u8")
 async def serve_m3u8_file(share_id: str):
     db = SessionLocal()
     try:
+        # Check if it's a regular video share
         video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
-        if not video:
-            raise HTTPException(status_code=404, detail="Share link not found")
-        expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
-        if expires_at_aware < datetime.datetime.now(timezone.utc):
-            raise HTTPException(status_code=403, detail="Share link has expired")
+        if video:
+            expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
+            if expires_at_aware < datetime.datetime.now(timezone.utc):
+                raise HTTPException(status_code=403, detail="Share link has expired")
+            
+            m3u8_path = SHARES_DIR / f"{share_id}.m3u8"
+            if not m3u8_path.exists():
+                logger.warning(f".m3u8 file not found for share_id={share_id}, attempting to regenerate")
+                if not generate_m3u8_file(share_id, video.stash_video_id, video.resolution):
+                    logger.error(f"Failed to regenerate .m3u8 file for share_id={share_id}")
+                    raise HTTPException(status_code=500, detail="Failed to regenerate .m3u8 file")
+            
+            return FileResponse(
+                m3u8_path,
+                media_type="application/x-mpegURL",
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Cache-Control": "public, max-age=10"
+                }
+            )
         
-        m3u8_path = SHARES_DIR / f"{share_id}.m3u8"
-        if not m3u8_path.exists():
-            logger.warning(f".m3u8 file not found for share_id={share_id}, attempting to regenerate")
-            if not generate_m3u8_file(share_id, video.stash_video_id, video.resolution):
-                logger.error(f"Failed to regenerate .m3u8 file for share_id={share_id}")
-                raise HTTPException(status_code=500, detail="Failed to regenerate .m3u8 file")
+        # Check if it's a tag video share (format: tag-{tag_share_id}-video-{video_id})
+        if share_id.startswith("tag-") and "-video-" in share_id:
+            parts = share_id.split("-video-")
+            if len(parts) == 2:
+                tag_share_id = parts[0][4:]  # Remove "tag-" prefix
+                video_id = int(parts[1])
+                
+                tag_share = db.query(SharedTag).filter(SharedTag.share_id == tag_share_id).first()
+                if tag_share:
+                    expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at_aware < datetime.datetime.now(timezone.utc):
+                        raise HTTPException(status_code=403, detail="Tag share has expired")
+                    
+                    # Verify video belongs to this tag
+                    videos = await get_videos_by_tag(tag_share.stash_tag_id)
+                    video_exists = any(int(v["id"]) == video_id for v in videos)
+                    if not video_exists:
+                        raise HTTPException(status_code=404, detail="Video not found in this tag")
+                    
+                    m3u8_path = SHARES_DIR / f"{share_id}.m3u8"
+                    if not m3u8_path.exists():
+                        logger.warning(f".m3u8 file not found for tag video {share_id}, attempting to generate")
+                        if not generate_m3u8_file(share_id, video_id, tag_share.resolution):
+                            logger.error(f"Failed to generate .m3u8 file for tag video {share_id}")
+                            raise HTTPException(status_code=500, detail="Failed to generate .m3u8 file")
+                    
+                    return FileResponse(
+                        m3u8_path,
+                        media_type="application/x-mpegURL",
+                        headers={
+                            "Access-Control-Allow-Origin": "*",
+                            "Cache-Control": "public, max-age=10"
+                        }
+                    )
         
-        return FileResponse(
-            m3u8_path,
-            media_type="application/x-mpegURL",
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Cache-Control": "public, max-age=10"
-            }
-        )
+        raise HTTPException(status_code=404, detail="Share link not found")
     except Exception as e:
         logger.error(f"Error serving .m3u8 file: {e}")
         raise HTTPException(status_code=500, detail="Failed to serve .m3u8 file")
     finally:
         db.close()
 
-# Proxy HLS segments (.ts files)
+# Updated proxy_hls_segment to handle both regular and tag video shares
 @app.get("/share/{share_id}/stream/{segment}", response_class=StreamingResponse)
 async def proxy_hls_segment(share_id: str, segment: str, request: Request = None):
     db = SessionLocal()
     try:
+        # Check if it's a regular video share
         video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
-        if not video:
-            # Do not log non-existent shares
-            raise HTTPException(status_code=404, detail="Share link not found")
-        # DEBUG log for each segment request
-        if request is not None:
-            visitor_ip = request.client.host
-            logger.debug(f"{visitor_ip} requested segment {segment} for share_id={share_id}")
-        expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
-        if expires_at_aware < datetime.datetime.now(timezone.utc):
-            raise HTTPException(status_code=403, detail="Share link has expired")
+        if video:
+            if request is not None:
+                visitor_ip = request.client.host
+                logger.debug(f"{visitor_ip} requested segment {segment} for share_id={share_id}")
+            expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
+            if expires_at_aware < datetime.datetime.now(timezone.utc):
+                raise HTTPException(status_code=403, detail="Share link has expired")
+            
+            stash_url = f"{STASH_SERVER}/scene/{video.stash_video_id}/stream.m3u8/{segment}?apikey={STASH_API_KEY}&resolution={video.resolution}"
+            response = requests.get(stash_url, stream=True)
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch HLS segment from Stash: status={response.status_code}, url={stash_url}")
+                raise HTTPException(status_code=500, detail="Failed to fetch HLS segment from Stash")
+            
+            logger.debug(f"Proxied .ts segment for share_id={share_id}, segment={segment}")
+            def stream_content():
+                for chunk in response.iter_content(chunk_size=2048*1024):
+                    if chunk:
+                        yield chunk
+            
+            return StreamingResponse(
+                stream_content(),
+                media_type="video/mp2t",
+                headers={
+                    "Content-Length": response.headers.get("Content-Length"),
+                    "Accept-Ranges": "bytes",
+                    "Access-Control-Allow-Origin": "*",
+                    "Cache-Control": "public, max-age=3600"
+                }
+            )
         
-        # Construct Stash segment URL
-        stash_url = f"{STASH_SERVER}/scene/{video.stash_video_id}/stream.m3u8/{segment}?apikey={STASH_API_KEY}&resolution={video.resolution}"
-        response = requests.get(stash_url, stream=True)
-        if response.status_code != 200:
-            logger.error(f"Failed to fetch HLS segment from Stash: status={response.status_code}, url={stash_url}")
-            raise HTTPException(status_code=500, detail="Failed to fetch HLS segment from Stash")
+        # Check if it's a tag video share
+        if share_id.startswith("tag-") and "-video-" in share_id:
+            parts = share_id.split("-video-")
+            if len(parts) == 2:
+                tag_share_id = parts[0][4:]  # Remove "tag-" prefix
+                video_id = int(parts[1])
+                
+                tag_share = db.query(SharedTag).filter(SharedTag.share_id == tag_share_id).first()
+                if tag_share:
+                    if request is not None:
+                        visitor_ip = request.client.host
+                        logger.debug(f"{visitor_ip} requested segment {segment} for tag video {share_id}")
+                    
+                    expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at_aware < datetime.datetime.now(timezone.utc):
+                        raise HTTPException(status_code=403, detail="Tag share has expired")
+                    
+                    # Verify video belongs to this tag
+                    videos = await get_videos_by_tag(tag_share.stash_tag_id)
+                    video_exists = any(int(v["id"]) == video_id for v in videos)
+                    if not video_exists:
+                        raise HTTPException(status_code=404, detail="Video not found in this tag")
+                    
+                    stash_url = f"{STASH_SERVER}/scene/{video_id}/stream.m3u8/{segment}?apikey={STASH_API_KEY}&resolution={tag_share.resolution}"
+                    response = requests.get(stash_url, stream=True)
+                    if response.status_code != 200:
+                        logger.error(f"Failed to fetch HLS segment from Stash: status={response.status_code}, url={stash_url}")
+                        raise HTTPException(status_code=500, detail="Failed to fetch HLS segment from Stash")
+                    
+                    logger.debug(f"Proxied .ts segment for tag video {share_id}, segment={segment}")
+                    def stream_content():
+                        for chunk in response.iter_content(chunk_size=2048*1024):
+                            if chunk:
+                                yield chunk
+                    
+                    return StreamingResponse(
+                        stream_content(),
+                        media_type="video/mp2t",
+                        headers={
+                            "Content-Length": response.headers.get("Content-Length"),
+                            "Accept-Ranges": "bytes",
+                            "Access-Control-Allow-Origin": "*",
+                            "Cache-Control": "public, max-age=3600"
+                        }
+                    )
         
-        logger.debug(f"Proxied .ts segment for share_id={share_id}, segment={segment}")
-        def stream_content():
-            for chunk in response.iter_content(chunk_size=2048*1024):
-                if chunk:
-                    yield chunk
-        
-        return StreamingResponse(
-            stream_content(),
-            media_type="video/mp2t",
-            headers={
-                "Content-Length": response.headers.get("Content-Length"),
-                "Accept-Ranges": "bytes",
-                "Access-Control-Allow-Origin": "*",
-                "Cache-Control": "public, max-age=3600"
-            }
-        )
+        raise HTTPException(status_code=404, detail="Share link not found")
     except Exception as e:
         logger.error(f"Error proxying HLS segment: {e}")
         raise HTTPException(status_code=500, detail="Failed to proxy HLS segment")
     finally:
         db.close()
+
 
 # Get video title from Stash
 @app.get("/get_video_title/{stash_id}")
@@ -649,6 +1115,385 @@ async def shared_videos(current_user: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Failed to list shared videos")
     finally:
         db.close()
+
+# Lookup tag endpoint
+@app.get("/lookup_tag/{tag_name}")
+async def lookup_tag(tag_name: str, current_user: str = Depends(get_current_user)):
+    """Lookup a tag and return info about it"""
+    try:
+        videos, tag_info = await get_videos_by_tag_name(tag_name)
+        
+        if not tag_info:
+            raise HTTPException(status_code=404, detail=f"Tag '{tag_name}' not found")
+        
+        logger.info(f"Tag lookup successful: {tag_name} -> {tag_info['id']} ({len(videos)} videos)")
+        return {
+            "tag_info": tag_info,
+            "video_count": len(videos)
+        }
+    except HTTPException:
+        # Re-raise HTTPException as-is (don't convert to 500 error)
+        raise
+    except Exception as e:
+        logger.error(f"Error looking up tag '{tag_name}': {e}")
+        raise HTTPException(status_code=500, detail="Failed to lookup tag")
+
+# Share a tag
+@app.post("/share_tag")
+async def share_tag(request: ShareTagRequest, current_user: str = Depends(get_current_user)):
+    """Share all videos with a specific tag"""
+    logger.info(f"Tag share request: tag_name={request.tag_name}, tag_id={request.tag_id}")
+    
+    # Verify the tag exists and has videos using the provided tag_id
+    try:
+        videos = await get_videos_by_tag(request.tag_id)
+        
+        if not videos:
+            logger.warning(f"No videos found for tag ID {request.tag_id}")
+            raise HTTPException(status_code=404, detail=f"No videos found for tag ID '{request.tag_id}'")
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+    except Exception as e:
+        logger.error(f"Error getting videos for tag {request.tag_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify tag")
+    
+    # Generate share ID based on request
+    if request.custom_share_id:
+        share_id = request.custom_share_id
+        # Check if this share_id already exists
+        db = SessionLocal()
+        try:
+            existing_video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
+            existing_tag = db.query(SharedTag).filter(SharedTag.share_id == share_id).first()
+            if existing_video or existing_tag:
+                raise HTTPException(status_code=400, detail=f"Share ID '{share_id}' already exists")
+        finally:
+            db.close()
+    else:
+        share_id = generate_share_id()
+    
+    expires_at = datetime.datetime.now(timezone.utc) + datetime.timedelta(days=request.days_valid)
+    
+    db = SessionLocal()
+    try:
+        password_hash = None
+        if request.password:
+            password_hash = pwd_context.hash(request.password)
+        
+        shared_tag = SharedTag(
+            share_id=share_id,
+            tag_name=request.tag_name,
+            stash_tag_id=request.tag_id,
+            expires_at=expires_at,
+            hits=0,
+            resolution=request.resolution,
+            password_hash=password_hash,
+            show_in_gallery=request.show_in_gallery
+        )
+        db.add(shared_tag)
+        db.commit()
+        
+        logger.info(f"Tag shared: share_id={share_id}, tag_name={request.tag_name}, tag_id={request.tag_id}, video_count={len(videos)}")
+        share_url = f"{BASE_DOMAIN}/tag/{share_id}"
+        if request.password:
+            share_url += f"?pwd={request.password}"
+        
+        return {
+            "share_url": share_url,
+            "tag_name": request.tag_name,
+            "video_count": len(videos),
+            "share_id": share_id
+        }
+    except HTTPException:
+        # Re-raise HTTPException as-is  
+        raise
+    except Exception as e:
+        logger.error(f"Error sharing tag: {e}")
+        raise HTTPException(status_code=500, detail="Failed to share tag")
+    finally:
+        db.close()
+
+# List shared tags
+@app.get("/shared_tags")
+async def shared_tags(current_user: str = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        tags = db.query(SharedTag).all()
+        logger.info(f"Retrieved {len(tags)} shared tags")
+        result = []
+        for t in tags:
+            share_url = f"{BASE_DOMAIN}/tag/{t.share_id}"
+            result.append({
+                "share_id": t.share_id,
+                "tag_name": t.tag_name,
+                "expires_at": t.expires_at,
+                "hits": t.hits,
+                "share_url": share_url,
+                "resolution": t.resolution,
+                "has_password": t.password_hash is not None,
+                "show_in_gallery": t.show_in_gallery
+            })
+        return result
+    except Exception as e:
+        logger.error(f"Error listing shared tags: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list shared tags")
+    finally:
+        db.close()
+
+# Delete a tag share
+@app.delete("/delete_tag_share/{share_id}")
+async def delete_tag_share(share_id: str, current_user: str = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        tag = db.query(SharedTag).filter(SharedTag.share_id == share_id).first()
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+        
+        db.delete(tag)
+        db.commit()
+        
+        logger.info(f"Tag share deleted: share_id={share_id}")
+        return {"message": "Tag share deleted"}
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting tag share: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete tag share")
+    finally:
+        db.close()
+
+
+
+# M3U8 endpoint for individual videos in tag shares
+@app.get("/tag/{share_id}/video/{video_id}/stream.m3u8")
+async def serve_tag_video_m3u8(share_id: str, video_id: int):
+    db = SessionLocal()
+    try:
+        tag_share = db.query(SharedTag).filter(SharedTag.share_id == share_id).first()
+        if not tag_share:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+        
+        expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+        if expires_at_aware < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="Tag share has expired")
+        
+        # Check if this video actually belongs to this tag
+        videos = await get_videos_by_tag(tag_share.stash_tag_id)
+        video_exists = any(int(v["id"]) == video_id for v in videos)
+        if not video_exists:
+            raise HTTPException(status_code=404, detail="Video not found in this tag")
+        
+        # Check for existing static m3u8 file first
+        m3u8_path = SHARES_DIR / f"tag-{share_id}-video-{video_id}.m3u8"
+        if not m3u8_path.exists():
+            logger.warning(f".m3u8 file not found for tag video {share_id}/{video_id}, attempting to generate")
+            if not generate_m3u8_file(f"tag-{share_id}-video-{video_id}", video_id, tag_share.resolution):
+                logger.error(f"Failed to generate .m3u8 file for tag video {share_id}/{video_id}")
+                raise HTTPException(status_code=500, detail="Failed to generate .m3u8 file")
+        
+        return FileResponse(
+            m3u8_path,
+            media_type="application/x-mpegURL",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "public, max-age=10"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error serving tag video .m3u8 file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to serve .m3u8 file")
+    finally:
+        db.close()
+
+# Segment proxy for individual videos in tag shares
+@app.get("/tag/{share_id}/video/{video_id}/stream/{segment}", response_class=StreamingResponse)
+async def proxy_tag_video_segment(share_id: str, video_id: int, segment: str, request: Request = None):
+    db = SessionLocal()
+    try:
+        tag_share = db.query(SharedTag).filter(SharedTag.share_id == share_id).first()
+        if not tag_share:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+        
+        if request is not None:
+            visitor_ip = request.client.host
+            logger.debug(f"{visitor_ip} requested segment {segment} for tag video {share_id}/{video_id}")
+        
+        expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+        if expires_at_aware < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="Tag share has expired")
+        
+        # Check if this video actually belongs to this tag
+        videos = await get_videos_by_tag(tag_share.stash_tag_id)
+        video_exists = any(int(v["id"]) == video_id for v in videos)
+        if not video_exists:
+            raise HTTPException(status_code=404, detail="Video not found in this tag")
+        
+        # Construct Stash segment URL
+        stash_url = f"{STASH_SERVER}/scene/{video_id}/stream.m3u8/{segment}?apikey={STASH_API_KEY}&resolution={tag_share.resolution}"
+        response = requests.get(stash_url, stream=True)
+        if response.status_code != 200:
+            logger.error(f"Failed to fetch HLS segment from Stash: status={response.status_code}, url={stash_url}")
+            raise HTTPException(status_code=500, detail="Failed to fetch HLS segment from Stash")
+        
+        logger.debug(f"Proxied .ts segment for tag video {share_id}/{video_id}, segment={segment}")
+        def stream_content():
+            for chunk in response.iter_content(chunk_size=2048*1024):
+                if chunk:
+                    yield chunk
+        
+        return StreamingResponse(
+            stream_content(),
+            media_type="video/mp2t",
+            headers={
+                "Content-Length": response.headers.get("Content-Length"),
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "public, max-age=3600"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error proxying tag video HLS segment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to proxy HLS segment")
+    finally:
+        db.close()
+
+# Get full video details from Stash
+async def get_video_details(stash_video_id: int) -> dict | None:
+    """Get complete video details including performers, tags, studio, and URLs"""
+    stash_graphql_url = f"{STASH_SERVER}/graphql"
+    headers = {
+        "ApiKey": STASH_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    query = {
+        "query": """
+            query FindScene($id: ID!) {
+                findScene(id: $id) {
+                    id
+                    title
+                    details
+                    date
+                    rating100
+                    organized
+                    o_counter
+                    urls
+                    paths {
+                        screenshot
+                        preview
+                        stream
+                    }
+                    file {
+                        size
+                        duration
+                        video_codec
+                        audio_codec
+                        width
+                        height
+                        framerate
+                        bitrate
+                    }
+                    performers {
+                        name
+                        gender
+                        url
+                        twitter
+                        instagram
+                        birthdate
+                        ethnicity
+                        country
+                        hair_color
+                        height_cm
+                        measurements
+                        fake_tits
+                        tattoos
+                        piercings
+                        career_length
+                        aliases
+                    }
+                    studio {
+                        id
+                        name
+                        url
+                    }
+                    tags {
+                        id
+                        name
+                        aliases
+                        description
+                    }
+                    movies {
+                        movie {
+                            name
+                            date
+                        }
+                    }
+                    galleries {
+                        title
+                        url
+                    }
+                }
+            }
+        """,
+        "variables": {"id": str(stash_video_id)}
+    }
+    
+    try:
+        logger.debug(f"Getting full details for scene ID: {stash_video_id}")
+        response = requests.post(stash_graphql_url, json=query, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("errors"):
+            logger.error(f"GraphQL error getting scene details: {data['errors']}")
+            return None
+        
+        scene = data.get("data", {}).get("findScene")
+        if not scene:
+            logger.warning(f"Scene {stash_video_id} not found")
+            return None
+        
+        # Transform the data to a cleaner format
+        video_details = {
+            "id": scene["id"],
+            "title": scene["title"],
+            "details": scene.get("details", ""),
+            "date": scene.get("date"),
+            "rating": scene.get("rating100"),
+            "urls": scene.get("urls", []),
+            "duration": scene.get("file", {}).get("duration"),
+            "resolution": f"{scene.get('file', {}).get('width')}x{scene.get('file', {}).get('height')}" if scene.get("file") else None,
+            "performers": [
+                {
+                    "name": p["name"],
+                    "gender": p.get("gender"),
+                    "url": p.get("url"),
+                    "twitter": p.get("twitter"),
+                    "instagram": p.get("instagram")
+                } for p in scene.get("performers", [])
+            ],
+            "studio": {
+                "name": scene.get("studio", {}).get("name"),
+                "url": scene.get("studio", {}).get("url")
+            } if scene.get("studio") else None,
+            "tags": [
+                {
+                    "name": t["name"],
+                    "description": t.get("description")
+                } for t in scene.get("tags", [])
+            ],
+            "movies": [m["movie"]["name"] for m in scene.get("movies", []) if m.get("movie")],
+            "galleries": scene.get("galleries", [])
+        }
+        
+        logger.info(f"Retrieved full details for scene {stash_video_id}")
+        return video_details
+        
+    except Exception as e:
+        logger.error(f"Error getting scene details for ID {stash_video_id}: {e}")
+        return None
 
 # Run Uvicorn server
 if __name__ == "__main__":

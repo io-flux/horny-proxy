@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let backendApiBase = '';
+    if (window.location.pathname.includes('/static/admin.html')) {
+        backendApiBase = window.location.origin; 
+    } else {
+        backendApiBase = window.HORNY_PROXY_API_BASE || '';
+    }
+
     const loginSection = document.getElementById('login-section');
     const adminContent = document.getElementById('admin-content');
     const loginForm = document.getElementById('login-form');
@@ -16,7 +23,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareMessage = document.getElementById('share-message');
     const shareError = document.getElementById('share-error');
 
+    const shareTagForm = document.getElementById('share-tag-form');
+    const tagNameInput = document.getElementById('tag-name');
+    const tagIdInput = document.getElementById('tag-id');
+    const shareIdTypeSelect = document.getElementById('share-id-type');
+    const customShareIdInput = document.getElementById('custom-share-id');
+    const tagDaysValidInput = document.getElementById('tag-days-valid');
+    const tagResolutionInput = document.getElementById('tag-resolution');
+    const tagSharePasswordInput = document.getElementById('tag-share-password');
+    const tagShowInGalleryInput = document.getElementById('tag-show-in-gallery');
+    const lookupTagButton = document.getElementById('lookup-tag-button');
+    const tagShareMessage = document.getElementById('tag-share-message');
+    const tagShareError = document.getElementById('tag-share-error');
+    const tagInfo = document.getElementById('tag-info');
+    const foundTagName = document.getElementById('found-tag-name');
+    const foundTagCount = document.getElementById('found-tag-count');
+
     const sharedVideosTableBody = document.querySelector('#shared-videos-table tbody');
+    const sharedTagsTableBody = document.querySelector('#shared-tags-table tbody');
     const refreshSharesButton = document.getElementById('refresh-shares');
 
     const editModal = document.getElementById('edit-modal');
@@ -32,9 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let authToken = localStorage.getItem('horny_token');
 
-    // --- Helper Functions ---
     function showLogin() {
-        loginSection.style.display = 'block';
+        loginSection.style.display = 'flex'; 
         adminContent.style.display = 'none';
         localStorage.removeItem('horny_token');
         authToken = null;
@@ -42,22 +65,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showAdmin() {
         loginSection.style.display = 'none';
-        adminContent.style.display = 'block';
+        adminContent.style.display = 'flex'; 
         loginError.textContent = '';
-        fetchSharedVideos();
+        fetchSharedContent();
+        setBaseDomain();
     }
 
     function clearMessages() {
         loginError.textContent = '';
         shareMessage.textContent = '';
         shareError.textContent = '';
+        tagShareMessage.textContent = '';
+        tagShareError.textContent = '';
         editError.textContent = '';
     }
 
+    function logDebug(message, data = null) {
+        console.log(`[DEBUG] ${new Date().toISOString()} ${message}`, data || '');
+        if (data) {
+            try {
+                console.table(data);
+            } catch (e) {
+                // console.table might fail
+            }
+        }
+    }
+
     async function apiRequest(url, method = 'GET', body = null, requiresAuth = true) {
-        const headers = {
-            'Content-Type': 'application/json',
-        };
+        const fullUrl = backendApiBase + url;
+        logDebug(`API Request: ${method} ${fullUrl}`, body);
+        
+        const headers = {};
+        if (method !== 'POST' || url !== '/login') {
+            headers['Content-Type'] = 'application/json';
+        }
+
         if (requiresAuth) {
             if (!authToken) {
                 showLogin();
@@ -72,30 +114,46 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (body) {
-            options.body = JSON.stringify(body);
+            if (method === 'POST' && url === '/login') {
+                options.body = body; 
+            } else {
+                options.body = JSON.stringify(body);
+            }
         }
 
         try {
-            const response = await fetch(url, options);
+            const response = await fetch(fullUrl, options);
+            logDebug(`API Response: ${response.status} ${response.statusText} for ${method} ${fullUrl}`);
+            
             if (response.status === 401 && requiresAuth) {
                 showLogin();
-                throw new Error('Authentication failed');
+                throw new Error('Authentication failed or token expired.');
             }
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                let errorData = { detail: `HTTP error! status: ${response.status}`};
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData.detail = response.statusText || errorData.detail;
+                }
+                logDebug('API Error Response:', errorData);
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
             if (response.status === 204 || response.headers.get('content-length') === '0') {
+                logDebug('API Success Response (No Content)');
                 return null;
             }
-            return await response.json();
+            const responseData = await response.json();
+            logDebug('API Success Response:', responseData);
+            return responseData;
         } catch (error) {
-            console.error('API Request Error:', error);
-            throw error;
+            console.error(`API Request Error for ${method} ${fullUrl}:`, error.message);
+            throw error; 
         }
     }
 
     function escapeHTML(str) {
+        if (typeof str !== 'string') return '';
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
@@ -107,6 +165,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const diffTime = expiry - now;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return Math.max(0, diffDays);
+    }
+
+    function getRelativeTime(expiresAt) {
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const diffMs = expiry - now;
+        
+        if (diffMs < 0) return 'expired';
+        
+        const minutes = Math.floor(diffMs / 60000);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        const months = Math.floor(days / 30);
+        const years = Math.floor(days / 365);
+        
+        if (minutes < 60) return `${minutes}m`;
+        if (hours < 24) return `${hours}h`;
+        if (days < 30) return `${days}d`;
+        if (months < 12) return `${months}mo`;
+        return `${years}y`;
+    }
+    
+    function truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     }
 
     function copyToClipboard(text) {
@@ -139,115 +222,238 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(textarea);
     }
 
-    // --- Initialization ---
+    if (shareIdTypeSelect) {
+        shareIdTypeSelect.addEventListener('change', () => {
+            const customShareIdLabel = document.querySelector('label[for="custom-share-id"]');
+            if (shareIdTypeSelect.value === 'custom') {
+                customShareIdInput.style.display = 'block';
+                customShareIdLabel.style.display = 'block';
+                customShareIdInput.required = true;
+            } else {
+                customShareIdInput.style.display = 'none';
+                customShareIdLabel.style.display = 'none';
+                customShareIdInput.required = false;
+                customShareIdInput.value = '';
+            }
+        });
+    }
+
     if (authToken) {
         showAdmin();
     } else {
         showLogin();
     }
 
-    // --- Event Listeners ---
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearMessages();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        const formData = new URLSearchParams();
-        formData.append('username', username);
-        formData.append('password', password);
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
 
-        try {
-            const response = await fetch('/login', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
-                throw new Error(errorData.detail || `Login failed with status: ${response.status}`);
+            try {
+                const data = await apiRequest('/login', 'POST', formData, false);
+                authToken = data.access_token;
+                localStorage.setItem('horny_token', authToken);
+                showAdmin();
+            } catch (error) {
+                console.error('Login failed:', error);
+                loginError.textContent = error.message;
+                showLogin();
             }
-
-            const data = await response.json();
-            authToken = data.access_token;
-            localStorage.setItem('horny_token', authToken);
-            showAdmin();
-        } catch (error) {
-            console.error('Login failed:', error);
-            loginError.textContent = error.message;
+        });
+    }
+    
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
             showLogin();
-        }
-    });
+        });
+    }
 
-    logoutButton.addEventListener('click', () => {
-        showLogin();
-    });
-
-    lookupTitleButton.addEventListener('click', async () => {
-        clearMessages();
-        const stashId = stashIdInput.value;
-        if (!stashId) {
-            shareError.textContent = 'Please enter a Stash Video ID.';
-            return;
-        }
-        try {
-            const data = await apiRequest(`/get_video_title/${stashId}`);
-            if (data && data.title) {
-                videoNameInput.value = data.title;
-            } else {
-                shareError.textContent = 'Could not find title for this ID.';
-                videoNameInput.value = '';
+    if (lookupTitleButton) {
+        lookupTitleButton.addEventListener('click', async () => {
+            clearMessages();
+            const stashId = stashIdInput.value;
+            if (!stashId) {
+                shareError.textContent = 'Please enter a Stash Video ID.';
+                return;
             }
-        } catch (error) {
-            shareError.textContent = `Error looking up title: ${error.message}`;
-            videoNameInput.value = '';
-        }
-    });
+            
+            logDebug('Looking up video title for ID:', stashId);
+            
+            try {
+                const data = await apiRequest(`/get_video_title/${stashId}`);
+                if (data && data.title) {
+                    videoNameInput.value = data.title;
+                    logDebug('Video title found:', data.title);
+                } else {
+                    shareError.textContent = 'Could not find title for this ID.';
+                    videoNameInput.value = '';
+                    logDebug('No title found for video ID:', stashId);
+                }
+            } catch (error) {
+                shareError.textContent = `Error looking up title: ${error.message}`;
+                videoNameInput.value = '';
+                logDebug('Error looking up video title:', error);
+            }
+        });
+    }
 
-    shareForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearMessages();
+    if (shareForm) {
+        shareForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
 
-        const shareData = {
-            video_name: videoNameInput.value,
-            stash_video_id: parseInt(stashIdInput.value, 10),
-            days_valid: parseInt(daysValidInput.value, 10),
-            resolution: resolutionInput.value,
-            password: sharePasswordInput.value || null,
-            show_in_gallery: showInGalleryInput.checked
-        };
+            const shareData = {
+                video_name: videoNameInput.value,
+                stash_video_id: parseInt(stashIdInput.value, 10),
+                days_valid: parseInt(daysValidInput.value, 10),
+                resolution: resolutionInput.value,
+                password: sharePasswordInput.value || null,
+                show_in_gallery: showInGalleryInput.checked
+            };
 
-        if (!shareData.video_name || isNaN(shareData.stash_video_id) || isNaN(shareData.days_valid) || !shareData.resolution) {
-            shareError.textContent = 'Please fill in all required fields correctly.';
-            return;
-        }
+            logDebug('Sharing video with data:', shareData);
 
+            if (!shareData.video_name || isNaN(shareData.stash_video_id) || isNaN(shareData.days_valid) || !shareData.resolution) {
+                shareError.textContent = 'Please fill in all required fields correctly.';
+                return;
+            }
+
+            try {
+                const result = await apiRequest('/share', 'POST', shareData);
+                shareMessage.textContent = `Video shared successfully! URL: ${result.share_url}`;
+                shareForm.reset();
+                fetchSharedContent();
+                logDebug('Video shared successfully:', result);
+            } catch (error) {
+                shareError.textContent = `Failed to share video: ${error.message}`;
+                logDebug('Failed to share video:', error);
+            }
+        });
+    }
+    
+    if (lookupTagButton) {
+        lookupTagButton.addEventListener('click', async () => {
+            clearMessages();
+            const tagName = tagNameInput.value.trim();
+            if (!tagName) {
+                tagShareError.textContent = 'Please enter a tag name.';
+                return;
+            }
+            
+            logDebug('Looking up tag:', tagName);
+            
+            try {
+                const data = await apiRequest(`/lookup_tag/${encodeURIComponent(tagName)}`);
+                logDebug('Tag lookup response:', data);
+                
+                if (data && data.tag_info) {
+                    foundTagName.textContent = data.tag_info.name;
+                    foundTagCount.textContent = data.video_count;
+                    tagIdInput.value = data.tag_info.id;
+                    tagInfo.style.display = 'block';
+                    tagShareError.textContent = '';
+                    logDebug('Tag found:', data.tag_info);
+                } else {
+                    tagShareError.textContent = 'Tag not found or has no videos.';
+                    tagInfo.style.display = 'none';
+                    tagIdInput.value = '';
+                    logDebug('Tag not found:', tagName);
+                }
+            } catch (error) {
+                tagShareError.textContent = `Error looking up tag: ${error.message}`;
+                tagInfo.style.display = 'none';
+                tagIdInput.value = '';
+                logDebug('Error looking up tag:', error);
+            }
+        });
+    }
+
+    if (shareTagForm) {
+        shareTagForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            let customShareId = null;
+            if (shareIdTypeSelect.value === 'custom') {
+                customShareId = customShareIdInput.value.trim();
+                if (!customShareId) {
+                    tagShareError.textContent = 'Please enter a custom share ID.';
+                    return;
+                }
+            } else if (shareIdTypeSelect.value === 'tag-name') {
+                customShareId = tagNameInput.value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-');
+                 if (!customShareId) {
+                    tagShareError.textContent = 'Cannot derive share ID from empty tag name.';
+                    return;
+                }
+            }
+
+            const shareTagData = {
+                tag_name: tagNameInput.value.trim(),
+                tag_id: tagIdInput.value.trim(),
+                days_valid: parseInt(tagDaysValidInput.value, 10),
+                resolution: tagResolutionInput.value,
+                password: tagSharePasswordInput.value || null,
+                show_in_gallery: tagShowInGalleryInput.checked,
+                custom_share_id: customShareId
+            };
+
+            logDebug('Sharing tag with data:', shareTagData);
+
+            if (!shareTagData.tag_name || !shareTagData.tag_id || isNaN(shareTagData.days_valid) || !shareTagData.resolution) {
+                tagShareError.textContent = 'Please fill in all required fields correctly.';
+                return;
+            }
+
+            try {
+                const result = await apiRequest('/share_tag', 'POST', shareTagData);
+                tagShareMessage.textContent = `Tag shared successfully! URL: ${result.share_url} (${result.video_count} videos)`;
+                shareTagForm.reset();
+                tagInfo.style.display = 'none';
+                tagIdInput.value = '';
+                if(shareIdTypeSelect) shareIdTypeSelect.value = 'random';
+                if(customShareIdInput) customShareIdInput.style.display = 'none';
+                const customShareIdLabel = document.querySelector('label[for="custom-share-id"]');
+                if(customShareIdLabel) customShareIdLabel.style.display = 'none';
+                fetchSharedContent();
+                logDebug('Tag shared successfully:', result);
+            } catch (error) {
+                tagShareError.textContent = `Failed to share tag: ${error.message}`;
+                logDebug('Failed to share tag:', error);
+            }
+        });
+    }
+
+    if (refreshSharesButton) {
+        refreshSharesButton.addEventListener('click', fetchSharedContent);
+    }
+
+    async function fetchSharedContent() {
+        logDebug('Fetching shared content...');
         try {
-            const result = await apiRequest('/share', 'POST', shareData);
-            shareMessage.textContent = `Video shared successfully! URL: ${result.share_url}`;
-            shareForm.reset();
-            fetchSharedVideos();
-        } catch (error) {
-            shareError.textContent = `Failed to share video: ${error.message}`;
-        }
-    });
-
-    refreshSharesButton.addEventListener('click', fetchSharedVideos);
-
-    async function fetchSharedVideos() {
-        try {
-            const videos = await apiRequest('/shared_videos');
+            const [videos, tags] = await Promise.all([
+                apiRequest('/shared_videos'),
+                apiRequest('/shared_tags')
+            ]);
+            logDebug('Fetched videos:', videos);
+            logDebug('Fetched tags:', tags);
             renderSharedVideos(videos);
+            renderSharedTags(tags);
         } catch (error) {
-            console.error('Failed to fetch shared videos:', error);
-            sharedVideosTableBody.innerHTML = '<tr><td colspan="4">Failed to load shared videos. Please try again.</td></tr>';
+            console.error('Failed to fetch shared content:', error.message);
+            if(sharedVideosTableBody) sharedVideosTableBody.innerHTML = '<tr><td colspan="4">Failed to load shared videos. Please try again.</td></tr>';
+            if(sharedTagsTableBody) sharedTagsTableBody.innerHTML = '<tr><td colspan="4">Failed to load shared tags. Please try again.</td></tr>';
         }
     }
 
     function renderSharedVideos(videos) {
+        if(!sharedVideosTableBody) return;
         sharedVideosTableBody.innerHTML = '';
         if (!videos || videos.length === 0) {
             sharedVideosTableBody.innerHTML = '<tr><td colspan="4">No videos shared yet.</td></tr>';
@@ -256,35 +462,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
         videos.forEach(video => {
             const row = document.createElement('tr');
-            const expiresDate = new Date(video.expires_at).toLocaleString();
+            const relativeTime = getRelativeTime(video.expires_at);
             const shareUrl = video.share_url;
+            const displayName = truncateText(video.video_name, 30);
+            const fullName = video.video_name;
 
             row.innerHTML = `
-                <td>${escapeHTML(video.video_name)}</td>
+                <td title="${escapeHTML(fullName)}">${escapeHTML(displayName)}</td>
                 <td>${video.hits}</td>
-                <td>${expiresDate}</td>
+                <td>${relativeTime}</td>
                 <td>
-                    <a href="${shareUrl}" target="_blank">${shareUrl}</a>
-                    <button class="copy-button" data-url="${shareUrl}">Copy</button>
-                    <button class="edit-button" data-share-id="${video.share_id}" data-video-name="${escapeHTML(video.video_name.split(' (')[0])}" data-days-valid="${calculateDaysRemaining(video.expires_at)}" data-resolution="${video.resolution}" data-has-password="${video.has_password}" data-show-in-gallery="${video.show_in_gallery}">Edit</button>
-                    <button class="delete-button" data-share-id="${video.share_id}">Delete</button>
+                    <button class="copy-button" data-url="${escapeHTML(shareUrl)}">Copy</button>
+                    <button class="edit-button" 
+                        data-share-id="${escapeHTML(video.share_id)}" 
+                        data-video-name="${escapeHTML(video.video_name.split(' (')[0])}" 
+                        data-days-valid="${calculateDaysRemaining(video.expires_at)}" 
+                        data-resolution="${escapeHTML(video.resolution)}" 
+                        data-has-password="${video.has_password}" 
+                        data-show-in-gallery="${video.show_in_gallery}"
+                        data-stash-video-id="${escapeHTML(video.stash_video_id.toString())}">Edit</button>
+                    <button class="delete-button" data-share-id="${escapeHTML(video.share_id)}">Delete</button>
                 </td>
             `;
             sharedVideosTableBody.appendChild(row);
         });
 
-        addTableButtonListeners();
+        addVideoTableButtonListeners();
     }
 
-    function addTableButtonListeners() {
-        document.querySelectorAll('.copy-button').forEach(button => {
+    function renderSharedTags(tags) {
+        if(!sharedTagsTableBody) return;
+        sharedTagsTableBody.innerHTML = '';
+        if (!tags || tags.length === 0) {
+            sharedTagsTableBody.innerHTML = '<tr><td colspan="4">No tags shared yet.</td></tr>';
+            return;
+        }
+
+        tags.forEach(tag => {
+            const row = document.createElement('tr');
+            const relativeTime = getRelativeTime(tag.expires_at);
+            const shareUrl = tag.share_url;
+            const displayName = truncateText(`${tag.tag_name} (${tag.resolution})`, 30);
+            const fullName = `${tag.tag_name} (${tag.resolution})`;
+
+            row.innerHTML = `
+                <td title="${escapeHTML(fullName)}">${escapeHTML(displayName)}</td>
+                <td>${tag.hits}</td>
+                <td>${relativeTime}</td>
+                <td>
+                    <button class="copy-button" data-url="${escapeHTML(shareUrl)}">Copy</button>
+                    <button class="delete-tag-button" data-share-id="${escapeHTML(tag.share_id)}">Delete</button>
+                </td>
+            `;
+            sharedTagsTableBody.appendChild(row);
+        });
+
+        addTagTableButtonListeners();
+    }
+
+    function addVideoTableButtonListeners() {
+        document.querySelectorAll('#shared-videos-table .copy-button').forEach(button => {
             button.addEventListener('click', (e) => {
                 const url = e.target.getAttribute('data-url');
                 copyToClipboard(url);
             });
         });
 
-        document.querySelectorAll('.edit-button').forEach(button => {
+        document.querySelectorAll('#shared-videos-table .edit-button').forEach(button => {
             button.addEventListener('click', (e) => {
                 const shareId = e.target.getAttribute('data-share-id');
                 const videoName = e.target.getAttribute('data-video-name');
@@ -292,25 +536,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resolution = e.target.getAttribute('data-resolution');
                 const showInGallery = e.target.getAttribute('data-show-in-gallery') === 'true';
                 
-                editShareIdInput.value = shareId;
-                editVideoNameInput.value = videoName;
-                editDaysValidInput.value = Math.max(1, parseInt(daysValid) || 7);
-                editResolutionInput.value = resolution;
-                editSharePasswordInput.value = '';
-                editShowInGalleryInput.checked = showInGallery;
+                if(editShareIdInput) editShareIdInput.value = shareId;
+                if(editVideoNameInput) editVideoNameInput.value = videoName;
+                if(editDaysValidInput) editDaysValidInput.value = Math.max(1, parseInt(daysValid) || 7);
+                if(editResolutionInput) editResolutionInput.value = resolution;
+                if(editSharePasswordInput) editSharePasswordInput.value = '';
+                if(editShowInGalleryInput) editShowInGalleryInput.checked = showInGallery;
                 
-                editModal.style.display = 'block';
+                if(editModal) editModal.style.display = 'block';
                 clearMessages();
             });
         });
 
-        document.querySelectorAll('.delete-button').forEach(button => {
+        document.querySelectorAll('#shared-videos-table .delete-button').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const shareId = e.target.getAttribute('data-share-id');
                 if (confirm(`Are you sure you want to delete share ${shareId}?`)) {
                     try {
                         await apiRequest(`/delete_share/${shareId}`, 'DELETE');
-                        fetchSharedVideos();
+                        fetchSharedContent();
                     } catch (error) {
                         alert(`Failed to delete share: ${error.message}`);
                     }
@@ -319,33 +563,89 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    cancelEditButton.addEventListener('click', () => {
-        editModal.style.display = 'none';
-    });
+    function addTagTableButtonListeners() {
+        document.querySelectorAll('#shared-tags-table .copy-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const url = e.target.getAttribute('data-url');
+                copyToClipboard(url);
+            });
+        });
 
-    saveEditButton.addEventListener('click', async () => {
-        clearMessages();
-        const shareId = editShareIdInput.value;
-        const updatedData = {
-            video_name: editVideoNameInput.value,
-            stash_video_id: 0,
-            days_valid: parseInt(editDaysValidInput.value, 10),
-            resolution: editResolutionInput.value,
-            password: editSharePasswordInput.value || null,
-            show_in_gallery: editShowInGalleryInput.checked
-        };
+        document.querySelectorAll('#shared-tags-table .delete-tag-button').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const shareId = e.target.getAttribute('data-share-id');
+                if (confirm(`Are you sure you want to delete tag share ${shareId}?`)) {
+                    try {
+                        await apiRequest(`/delete_tag_share/${shareId}`, 'DELETE');
+                        fetchSharedContent();
+                    } catch (error) {
+                        alert(`Failed to delete tag share: ${error.message}`);
+                    }
+                }
+            });
+        });
+    }
+    
+    if (cancelEditButton) {
+        cancelEditButton.addEventListener('click', () => {
+            if(editModal) editModal.style.display = 'none';
+        });
+    }
 
-        if (!updatedData.video_name || isNaN(updatedData.days_valid) || !updatedData.resolution) {
-            editError.textContent = 'Please fill in all required fields correctly.';
-            return;
-        }
+    if (saveEditButton) {
+        saveEditButton.addEventListener('click', async () => {
+            clearMessages();
+            const shareId = editShareIdInput.value;
+            
+            const editButton = document.querySelector(`#shared-videos-table button.edit-button[data-share-id="${shareId}"]`);
+            const stashVideoId = editButton ? parseInt(editButton.getAttribute('data-stash-video-id')) : 0;
+            
+            const updatedData = {
+                video_name: editVideoNameInput.value,
+                stash_video_id: stashVideoId, 
+                days_valid: parseInt(editDaysValidInput.value, 10),
+                resolution: editResolutionInput.value,
+                password: editSharePasswordInput.value || null,
+                show_in_gallery: editShowInGalleryInput.checked
+            };
 
+            if (!updatedData.video_name || isNaN(updatedData.days_valid) || !updatedData.resolution) {
+                editError.textContent = 'Please fill in all required fields correctly.';
+                return;
+            }
+
+            try {
+                await apiRequest(`/edit_share/${shareId}`, 'PUT', updatedData);
+                if(editModal) editModal.style.display = 'none';
+                fetchSharedContent();
+            } catch (error) {
+                editError.textContent = `Failed to update share: ${error.message}`;
+            }
+        });
+    }
+
+    // Get base domain from shared videos response
+    async function setBaseDomain() {
         try {
-            await apiRequest(`/edit_share/${shareId}`, 'PUT', updatedData);
-            editModal.style.display = 'none';
-            fetchSharedVideos();
+            const response = await fetch(backendApiBase + '/shared_videos', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('horny_token')}`
+                }
+            });
+            if (response.ok) {
+                const videos = await response.json();
+                if (videos.length > 0 && videos[0].share_url) {
+                    // Extract base domain from share URL
+                    const shareUrl = new URL(videos[0].share_url);
+                    const baseDomain = shareUrl.origin;
+                    const logoLink = document.getElementById('logo-link');
+                    if (logoLink) {
+                        logoLink.href = baseDomain;
+                    }
+                }
+            }
         } catch (error) {
-            editError.textContent = `Failed to update share: ${error.message}`;
+            console.log('Could not determine base domain:', error);
         }
-    });
+    }
 });

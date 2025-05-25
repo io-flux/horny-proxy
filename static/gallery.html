@@ -8,13 +8,11 @@
 </head>
 <body>
     <header>
-        <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo">
+        <a href="/" style="display: inline-block;">
+            <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo">
+        </a>
         <h1>Video Gallery</h1>
     </header>
-
-    <div class="disclaimer">
-        {{ disclaimer }}
-    </div>
 
     <div class="gallery" id="gallery">
         <!-- Video cards will be inserted here by JavaScript -->
@@ -47,9 +45,10 @@
                 const nextBatch = videoCards.slice(currentIndex, currentIndex + cardsPerPage);
                 nextBatch.forEach(card => {
                     const cardElement = document.createElement('div');
-                    cardElement.className = 'video-card';
+                    cardElement.className = card.is_tag ? 'video-card tag-collection' : 'video-card';
                     cardElement.innerHTML = `
                         <a href="${card.share_url}">
+                            ${card.is_tag ? '<span class="tag-badge">Collection</span>' : ''}
                             <img src="${card.thumbnail_url}" alt="Video thumbnail" onerror="this.src='/static/default_thumbnail.jpg';this.onerror=null;">
                             <div class="title">${card.video_name}</div>
                         </a>
@@ -90,5 +89,9 @@
         window.addEventListener('scroll', checkAndLoadMore);
         window.addEventListener('resize', checkAndLoadMore); // Also check on resize
     </script>
+
+<div class="disclaimer">
+    {{ disclaimer }}
+</div>
 </body>
 </html>

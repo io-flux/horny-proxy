@@ -1,0 +1,689 @@
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;  /* Only hide overflow at the top level */
+}
+
+body {
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
+    color: #f0e6ff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+}
+
+.header {
+    padding: 15px 30px;
+    background: rgba(20, 10, 30, 0.9);
+    border-bottom: 1px solid rgba(255, 0, 128, 0.2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 20px rgba(255, 0, 128, 0.1);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header img {
+    max-height: 80px;
+    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.3));
+}
+
+h1 {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 50%, #c77dff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+}
+
+.header-controls {
+    display: flex;
+    gap: 15px;
+}
+
+#admin-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+}
+
+.admin-content-wrapper {
+    flex: 1;
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+    max-width: none;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    height: 100%;
+    width: 100%;
+    flex: 1;
+    max-width: none;
+}
+
+.admin-section {
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 0, 128, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    transition: all 0.3s ease;
+    min-height: 0;  /* Important for flexbox children */
+}
+
+.admin-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 0, 128, 0.05) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    border-radius: 16px;
+}
+
+.admin-section:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 35px rgba(255, 0, 128, 0.15), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 0, 128, 0.3);
+}
+
+.admin-section:hover::before {
+    opacity: 0.5;
+    animation: sheen 0.8s ease-out;
+}
+
+@keyframes sheen {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+.admin-section h2 {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 15px 0;  /* Reduced bottom margin */
+    flex-shrink: 0;
+    letter-spacing: 1px;
+}
+
+.grid-form {
+    display: grid;
+    gap: 15px;
+}
+
+.grid-form label {
+    color: #c77dff;
+    font-size: 0.85rem;
+    margin-bottom: -10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.grid-form input[type="text"],
+.grid-form input[type="number"],
+.grid-form input[type="password"],
+.grid-form select {
+    background: rgba(10, 5, 20, 0.6);
+    border: 1px solid rgba(199, 125, 255, 0.3);
+    color: #f0e6ff;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.grid-form input[type="text"]:focus,
+.grid-form input[type="number"]:focus,
+.grid-form input[type="password"]:focus,
+.grid-form select:focus {
+    outline: none;
+    border-color: #ff0080;
+    box-shadow: 0 0 0 3px rgba(255, 0, 128, 0.2),
+                inset 0 0 20px rgba(255, 0, 128, 0.1);
+    background: rgba(20, 10, 30, 0.8);
+}
+
+.grid-form input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+    accent-color: #ff0080;
+}
+
+/* Fix checkbox label styling in grid forms */
+.grid-form label:has(input[type="checkbox"]) {
+    grid-column: 1 / -1;  /* Span full width */
+    text-align: left;
+    padding-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.grid-form label:has(input[type="checkbox"]) input[type="checkbox"] {
+    margin: 0;
+}
+
+.input-group {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+button {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(255, 0, 128, 0.3);
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Lookup buttons - much darker purple */
+#lookup-title-button,
+#lookup-tag-button {
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+    box-shadow: 0 2px 10px rgba(58, 10, 95, 0.3);
+}
+
+#lookup-title-button:hover,
+#lookup-tag-button:hover {
+    box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+}
+
+#logout-button {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+    box-shadow: 0 2px 10px rgba(255, 0, 110, 0.3);
+}
+
+#logout-button:hover {
+    box-shadow: 0 4px 15px rgba(255, 0, 110, 0.5);
+}
+
+#refresh-shares {
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+    box-shadow: 0 2px 10px rgba(58, 10, 95, 0.3);
+    color: #fff !important;
+}
+
+#refresh-shares:hover {
+    box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+}
+
+.success-message {
+    color: #ff6ec7;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    text-shadow: 0 0 10px rgba(255, 110, 199, 0.5);
+    word-wrap: break-word;  /* Prevent long URLs from causing overflow */
+    overflow-wrap: break-word;
+}
+
+.error-message {
+    color: #ff4458;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    text-shadow: 0 0 10px rgba(255, 68, 88, 0.5);
+    word-wrap: break-word;  /* Prevent long messages from causing overflow */
+    overflow-wrap: break-word;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+th {
+    background: rgba(20, 10, 30, 0.8);
+    color: #ff6ec7;
+    padding: 12px;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid rgba(255, 0, 128, 0.3);
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(199, 125, 255, 0.1);
+    color: #f0e6ff;
+}
+
+tr {
+    transition: all 0.2s ease;
+}
+
+tr:hover {
+    background: rgba(255, 0, 128, 0.1);
+    transform: translateX(2px);
+}
+
+table button {
+    padding: 4px 8px;
+    margin: 0 2px;
+    font-size: 0.7rem;
+}
+
+table a {
+    color: #ff6ec7;
+    text-decoration: none;
+    margin-right: 10px;
+    transition: all 0.2s ease;
+}
+
+table a:hover {
+    color: #ff0080;
+    text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+}
+
+.copy-button {
+    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
+    box-shadow: 0 2px 8px rgba(114, 9, 183, 0.3);
+}
+
+.edit-button {
+    background: linear-gradient(135deg, #b5179e 0%, #f72585 100%);
+    box-shadow: 0 2px 8px rgba(181, 23, 158, 0.3);
+}
+
+.delete-button, .delete-tag-button {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+    box-shadow: 0 2px 8px rgba(255, 0, 110, 0.3);
+}
+
+#tag-info {
+    background: rgba(10, 5, 20, 0.6);
+    padding: 12px;
+    border-radius: 8px;
+    margin: -5px 0 10px 0;
+    font-size: 0.85rem;
+    border: 1px solid rgba(199, 125, 255, 0.2);
+}
+
+#tag-info p {
+    margin: 0;
+    color: #c77dff;
+}
+
+/* Modal styles */
+#edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.95) 0%, rgba(60, 20, 80, 0.95) 100%);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 0, 128, 0.3);
+    z-index: 1000;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(255, 0, 128, 0.2);
+    max-width: 500px;
+    width: 90%;
+    backdrop-filter: blur(20px);
+}
+
+#edit-modal h3 {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-top: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.modal-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Login section styles */
+#login-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
+    overflow: hidden;  /* Prevent scrollbars on login */
+}
+
+#login-section .admin-section {
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(255, 0, 128, 0.2);
+    overflow: visible;  /* Allow content to size naturally */
+}
+
+#login-section .grid-form {
+    gap: 15px;
+    margin: 0;
+}
+
+#login-section .grid-form input,
+#login-section .grid-form button {
+    width: 100%;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 5, 20, 0.6);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+}
+
+/* Orange accent for special elements */
+.special-action {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+}
+
+.special-action:hover {
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, minmax(300px, 1fr));
+        overflow-y: auto;
+    }
+    
+    .admin-content-wrapper {
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .header-left {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .header h1 {
+        font-size: 1rem;
+    }
+    
+    .header-controls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .admin-content-wrapper {
+        padding: 10px;
+    }
+    
+    .admin-grid {
+        gap: 10px;
+    }
+    
+    .admin-section {
+        padding: 15px;
+    }
+}
+
+/* Override any green colors from styles.css */
+body h1, body h2, body h3,
+.container h1, .container h2, .container h3 {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+body a,
+.container a {
+    color: #ff6ec7;
+}
+
+body a:hover,
+.container a:hover {
+    color: #ff0080;
+}
+
+body button,
+.container button {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    border: none;
+    color: #fff !important;
+}
+
+body input:focus,
+body select:focus,
+body textarea:focus,
+.container input:focus,
+.container select:focus,
+.container textarea:focus {
+    border-color: #ff0080;
+    outline: none;
+}
+
+/* Special overrides for specific buttons */
+body #refresh-shares,
+.container #refresh-shares {
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+    color: #fff !important;
+}
+
+body #lookup-title-button,
+body #lookup-tag-button,
+.container #lookup-title-button,
+.container #lookup-tag-button {
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+}
+
+/* Make sure container uses full viewport */
+body > .container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    max-width: none !important;
+}
+
+/* Ensure admin content fills available space */
+#admin-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: none !important;
+}
+
+/* Remove any max-width from styles.css */
+.container,
+.admin-content-wrapper,
+.admin-grid {
+    max-width: none !important;
+}
+
+/* Add a wrapper for scrollable content within sections */
+.admin-section > * {
+    flex-shrink: 0;
+}
+
+/* Make tables scrollable when needed */
+.admin-section table {
+    display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: none;
+    flex: 1;
+    min-height: 0;  /* Important for flexbox */
+}
+
+/* Table wrapper for proper scrolling */
+.admin-section:has(table) {
+    min-height: 0;  /* Allow shrinking */
+}
+
+/* Only show scrollbar when content actually overflows */
+.admin-section table {
+    scrollbar-gutter: stable;  /* Prevent layout shift */
+}
+
+.admin-section table:not(:hover)::-webkit-scrollbar {
+    width: 0;  /* Hide scrollbar when not hovering */
+}
+
+.admin-section table:hover::-webkit-scrollbar {
+    width: 8px;
+}
+
+/* Forms should scroll if needed */
+.admin-section .grid-form {
+    overflow: visible;  /* Changed from overflow-y: auto */
+    max-height: none;   /* Remove height constraint */
+    padding-right: 0;   /* Remove scrollbar padding */
+    display: grid;
+    gap: 15px;
+    flex: 1;  /* Fill available space */
+}
+
+/* Fix table layout to prevent unnecessary scrollbars */
+.admin-section table thead,
+.admin-section table tbody {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-section table tr {
+    display: table-row;
+}
+
+.admin-section table th,
+.admin-section table td {
+    display: table-cell;
+}
+
+.admin-section table::-webkit-scrollbar-track {
+    background: rgba(10, 5, 20, 0.6);
+    border-radius: 4px;
+}
+
+.admin-section table::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    border-radius: 4px;
+}

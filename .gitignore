@@ -10,3 +10,5 @@ __pycaches/
 */.DS_Store
 testbench/
 testbench/*
+.vscode/
+.vscode/*

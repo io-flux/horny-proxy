@@ -1,616 +1,874 @@
 /*
  * Combined & Refined Styles
- * Theme: Sleek, Modern, Subdued Hacker / Cyber
- * Based on new styles.css color palette and structure,
- * incorporating elements and structure from original styles.css and video-player-theme.css.
+ * Theme: Sleek, Modern, Dark Purple/Pink/Red
+ * Based on admin.css color palette for consistency
  */
 
- @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
 
- /* --- Base Styles --- */
- body {
-     font-family: 'Roboto Mono', monospace;
-     font-size: 14px;
-     margin: 0;
-     padding: 0; /* Container handles padding */
-     background-color: #0a0e17; /* Very dark blue */
-     color: #e0e0e0; /* Light gray */
-     line-height: 1.6;
- }
- 
- .container {
-     max-width: 1400px; /* Wider container */
-     margin: 0 auto;
-     padding: 30px; /* Generous padding */
-     background-color: #141925; /* Darker blue */
-     border-radius: 8px;
-     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Subdued shadow */
-     min-height: calc(100vh - 60px); /* Ensure content fills screen height */
- }
- 
- /* --- Header --- */
- header {
-     background-color: #1e1e2f; /* Input/Table header background */
-     color: #e0e0e0; /* Light gray text */
-     text-align: center;
-     padding: 20px 0;
-     margin-bottom: 30px;
-     border-radius: 8px;
- }
- 
- header img {
-     max-height: 40px; /* Consistent logo size */
-     margin-bottom: 10px;
-     display: block; /* Ensure margin auto works */
-     margin-left: auto;
-     margin-right: auto;
- }
- 
- /* --- Logo (Used directly in container on video player page) --- */
- .logo {
-     max-height: 40px; /* Consistent logo size */
-     margin-bottom: 20px; /* Added margin from original styles */
-     display: block; /* Make it a block element for margin auto */
-     margin-left: auto; /* Center the block element */
-     margin-right: auto; /* Center the block element */
-     /* Add margin top for consistency if needed, e.g., margin-top: 20px; */
- }
- 
- 
- /* --- Typography --- */
- h1, h2, h3 {
-     color: #4caf50; /* Green accent */
-     font-weight: 500;
-     margin-bottom: 20px;
-     text-transform: uppercase;
-     letter-spacing: 1px;
-     margin-top: 10px; /* Added margin top for spacing consistency */
- }
- 
- h1 {
-     font-size: 1.5rem;
- }
- 
- h2 {
-     font-size: 1.2rem;
- }
- 
- h3 {
-     font-size: 1rem;
- }
- 
- .disclaimer {
-     text-align: center;
-     margin: 30px 0;
-     color: #757575; /* Gray text */
-     font-size: 0.85rem;
-     max-width: 800px;
-     margin-left: auto;
-     margin-right: auto;
- }
- 
- /* --- Forms --- */
- .grid-form {
-     display: grid;
-     grid-template-columns: 1fr 2fr; /* Updated grid ratio */
-     gap: 20px; /* Increased gap */
-     margin-bottom: 30px;
-     max-width: 600px; /* Constrain form width */
-     margin-left: auto; /* Center form if max-width is set */
-     margin-right: auto;
- }
- 
- .grid-form label {
-     text-align: right;
-     padding-top: 10px; /* Align baseline with input */
-     color: #a0a0a0; /* Lighter gray for labels */
-     font-size: 0.9rem;
- }
- 
- .grid-form input, .grid-form select, .grid-form button {
-     width: 100%; /* Ensure form elements fill grid column */
-     padding: 10px;
-     margin: 0; /* Reset default margin */
-     border: 1px solid #2a2a2a; /* Dark border */
-     background-color: #1e1e2f; /* Input background */
-     color: #e0e0e0; /* Light gray text */
-     border-radius: 4px;
-     font-size: 0.9rem;
-     transition: border-color 0.3s ease, background-color 0.3s ease;
- }
- 
- .grid-form input:focus, .grid-form select:focus {
-     outline: none; /* Remove default outline */
-     border-color: #4caf50; /* Green accent on focus */
-     background-color: #252540; /* Slightly darker background on focus */
- }
- 
- .grid-form select {
-     appearance: none; /* Remove default select arrow */
-     cursor: pointer;
-     /* Optional: Add custom arrow via background-image if desired, consistent with theme */
-     /* background-image: url('data:image/svg+xml;utf8,<svg fill=\"%23e0e0e0\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); */
-     /* background-repeat: no-repeat; */
-     /* background-position: right 10px top 50%; */
-     /* padding-right: 30px; */
- }
- 
- .grid-form input[type="number"] {
-     -webkit-appearance: none; /* Remove Safari spin buttons */
-     -moz-appearance: textfield; /* Keep Firefox spin buttons by default */
-     appearance: textfield; /* Remove default spin buttons */
- }
- 
- /* Explicitly hide spin buttons for all browsers if desired */
- .grid-form input[type="number"]::-webkit-inner-spin-button,
- .grid-form input[type="number"]::-webkit-outer-spin-button {
-     appearance: none;
-     margin: 0;
-     display: none; /* Ensure hiding */
- }
- 
- .input-group {
-     display: flex;
-     gap: 10px;
-     /* This group takes up the input's grid column */
-     grid-column: 2; /* Span the second column */
- }
- 
- .input-group input {
-     flex: 1; /* Allow input to grow */
-     width: auto; /* Override 100% from parent rule */
- }
- 
- .input-group button {
-     width: auto; /* Allow button to size based on content */
-     background-color: #4caf50; /* Green button */
- }
- 
- /* --- Buttons (General) --- */
- button {
-     padding: 10px 20px;
-     background-color: #3d3d3d; /* Dark gray button */
-     color: #e0e0e0; /* Light gray text */
-     border: none;
-     border-radius: 4px;
-     cursor: pointer;
-     font-size: 0.9rem;
-     transition: background-color 0.3s ease;
-     text-transform: uppercase;
- }
- 
- button:hover {
-     background-color: #4caf50; /* Green accent on hover */
- }
- 
- /* Specific button styles from admin panel */
- #logout-button {
-     background-color: #d32f2f; /* Red */
-     margin-bottom: 30px;
- }
- 
- #logout-button:hover {
-     background-color: #ff5252; /* Brighter red on hover */
- }
- 
- #refresh-shares {
-     background-color: #1e1e2f; /* Input background color */
-     border: 1px solid #4caf50; /* Green border */
-     color: #4caf50; /* Green text */
-     margin-bottom: 20px;
- }
- 
- #refresh-shares:hover {
-     background-color: #4caf50; /* Green background on hover */
-     color: #e0e0e0; /* Light gray text on hover */
- }
- 
- /* Action buttons in table */
- .copy-button, .edit-button, .delete-button {
-     margin-right: 10px; /* Spacing between buttons */
-     padding: 6px 12px; /* Smaller padding */
-     font-size: 0.8rem; /* Smaller font size */
-     /* Inherits general button styles otherwise */
- }
- 
- .delete-button {
-     background-color: #d32f2f; /* Red */
- }
- 
- .delete-button:hover {
-     background-color: #ff5252; /* Brighter red on hover */
- }
- 
- 
- /* --- Messages --- */
- .error-message {
-     color: #ff5252; /* Red */
-     font-size: 0.85rem;
-     margin-top: 10px;
-     max-width: 600px; /* Align with form width */
-     margin-left: auto; /* Center message */
-     margin-right: auto;
- }
- 
- .success-message {
-     color: #4caf50; /* Green accent */
-     font-size: 0.85rem;
-     margin-top: 10px;
-     max-width: 600px; /* Align with form width */
-     margin-left: auto; /* Center message */
-     margin-right: auto;
- }
- 
- 
- /* --- Table --- */
- table {
-     width: 100%;
-     border-collapse: collapse;
-     margin-top: 20px;
-     margin-bottom: 30px;
- }
- 
- th, td {
-     padding: 12px 15px; /* Increased padding */
-     text-align: left;
-     border-bottom: 1px solid #2a2a2a; /* Dark border */
-     font-size: 0.9rem;
- }
- 
- th {
-     background-color: #1e1e2f; /* Input/Table header background */
-     color: #4caf50; /* Green accent */
-     text-transform: uppercase;
-     font-weight: 500; /* Match heading weight */
- }
- 
- td a {
-     color: #4caf50; /* Green accent for links */
-     text-decoration: none;
-     transition: color 0.3s ease;
- }
- 
- td a:hover {
-     color: #66bb6a; /* Lighter green on hover */
-     text-decoration: underline;
- }
- 
- 
- /* --- Modal --- */
- #edit-modal {
-     position: fixed;
-     top: 0;
-     left: 0;
-     width: 100%;
-     height: 100%;
-     background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent overlay */
-     display: flex; /* Use flexbox to center content */
-     justify-content: center;
-     align-items: center;
-     z-index: 1000; /* High z-index */
-     backdrop-filter: blur(5px); /* Blur background */
-     /* Animation is handled by keyframes */
- }
- 
- /* Styling for the form content within the modal */
- #edit-modal .grid-form {
-     background-color: #141925; /* Container background */
-     padding: 30px;
-     border-radius: 8px;
-     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Consistent shadow */
-     /* Override main grid-form max-width and margins for modal */
-     max-width: 500px; /* Adjust modal form width */
-     margin: 0;
-     /* Keep grid layout, adjust column ratio if needed for modal */
-     grid-template-columns: 1fr 2fr; /* Using the same ratio as main form */
-     gap: 20px; /* Consistent gap */
- }
- 
- /* Override input group within modal to align with new grid ratio */
- #edit-modal .grid-form .input-group {
-      grid-column: 2; /* Ensure it spans the second column */
- }
- 
- 
- .modal-buttons {
-     grid-column: 2; /* Place buttons in the second column */
-     display: flex;
-     gap: 10px;
-     margin-top: 20px;
-     justify-content: flex-end; /* Align buttons to the right */
- }
- 
- 
- /* --- Login/Admin Sections --- */
- #login-section, #admin-content {
-     /* Initial state handled by inline style="display: none;" in HTML */
-     animation: fadeIn 0.5s ease-out; /* Apply fade-in animation */
- }
- 
- 
- /* --- Gallery Styles --- */
- .gallery {
-     display: grid;
-     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
-     gap: 30px; /* Gap between cards */
-     padding: 30px 0;
-     max-width: 1400px; /* Match container max-width */
-     margin: 0 auto;
- }
- 
- .video-card {
-     background-color: #1e1e2f; /* Input background color */
-     border-radius: 8px;
-     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Card shadow */
-     overflow: hidden;
-     transition: transform 0.3s ease, box-shadow 0.3s ease;
-     margin: 0 auto; /* Center cards if max-width is used (not needed with auto-fill grid) */
- }
- 
- .video-card:hover {
-     transform: translateY(-8px); /* Lift effect on hover */
-     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* Increased shadow on hover */
- }
- 
- .video-card a {
-     text-decoration: none;
-     color: inherit; /* Inherit color from parent */
-     display: block; /* Make the entire card clickable */
- }
- 
- .video-card img {
-     width: 100%;
-     height: 200px; /* Fixed height for thumbnails */
-     object-fit: cover; /* Cover the area without distorting aspect ratio */
-     background-color: #1a1a1a; /* Dark placeholder background */
-     display: block; /* Remove potential bottom space */
- }
- 
- .video-card .title {
-     padding: 15px;
-     text-align: center;
-     font-size: 0.9rem;
-     font-weight: 400;
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis; /* Truncate long titles */
-     color: #e0e0e0; /* Light gray text */
- }
- 
- #loading {
-     text-align: center;
-     padding: 20px;
-     color: #757575; /* Gray text */
-     font-size: 0.85rem;
-     display: none; /* Hidden by default */
- }
- 
- 
- /* --- Video Player Styles (Video.js Integration) --- */
- 
- .video-container {
-     margin: 20px 0; /* Margin from original styles */
-     text-align: center; /* Center the player */
-     max-width: 1000px; /* Max width from new styles */
-     margin-left: auto; /* Center container */
-     margin-right: auto;
- }
- 
- /* Ensure video player adheres to container width and aspect ratio, AND IS CENTERED */
- .video-js {
-     /* Styles from new player theme */
-     color: #e0e0e0; /* Light gray for text/icons - Using main text color for UI */
-     /* Styles from original player theme */
-     max-width: 1920px; /* Constrain video size - useful if container is wider than 1000px */
-     width: 100%; /* Fill parent width (up to max-width set on .video-container) */
-     aspect-ratio: 16 / 9; /* Maintain 16:9 aspect ratio */
-     /* background-color: #0a0e17; /* Optional: Match body background if no poster */
-     background-color: #000; /* Default black background */
-     margin: 0 auto; /* <-- ADDED: Center the block-level player */
- }
- 
- .video-js .vjs-control-bar {
-     /* Combined styles */
-     background-color: rgba(20, 25, 37, 0.85); /* Darker blue, slightly transparent (using container color) */
-     border-top: 1px solid #4caf50; /* Green accent top border */
-     height: 60px; /* Larger control bar from original player theme */
-     border-radius: 0 0 8px 8px; /* Rounded corners from original player theme */
- }
- 
- /* Play button, volume, fullscreen etc. */
- .video-js .vjs-control:not(.vjs-disabled):hover,
- .video-js .vjs-big-play-button:hover {
-     color: #39ff14; /* Electric lime for hover from new player theme */
-     text-shadow: 0 0 5px rgba(57, 255, 20, 0.7); /* Glow effect from new player theme */
- }
- 
- .video-js .vjs-big-play-button {
-     /* Styles from new player theme */
-     background-color: rgba(20, 25, 37, 0.7); /* Darker blue, transparent */
-     border: 2px solid #4caf50; /* Green accent border */
-     border-radius: 50%;
-     width: 2em;
-     height: 2em;
-     line-height: 2em;
-     margin-top: -1em;
-     margin-left: -1em;
-     /* Ensure it's visible and centered within its position */
-     display: flex;
-     justify-content: center;
-     align-items: center;
- }
- 
- .video-js .vjs-big-play-button .vjs-icon-placeholder:before {
-     font-size: 1.2em; /* Relative icon size */
-     line-height: inherit; /* Center icon */
- }
- 
- /* Progress bar */
- .video-js .vjs-play-progress,
- .video-js .vjs-volume-level {
-     background-color: #4caf50; /* Green accent for progress */
- }
- 
- .video-js .vjs-slider {
-     background-color: rgba(44, 62, 80, 0.7); /* Darker slider background from new player theme */
- }
- 
- .video-js .vjs-load-progress {
-     background: rgba(76, 175, 80, 0.3); /* Transparent green for load progress */
- }
- 
- .video-js .vjs-load-progress div {
-     background: rgba(76, 175, 80, 0.5); /* Slightly more opaque for loaded part */
- }
- 
- .video-js .vjs-progress-control .vjs-progress-holder {
-     height: 10px; /* Thicker progress bar from original player theme */
- }
- 
- 
- /* Time display */
- .video-js .vjs-time-control {
-     color: #e0e0e0; /* Light gray time text */
-     font-size: 0.9rem; /* Match main font size */
- }
- 
- /* Tooltips */
- .video-js .vjs-time-tooltip,
- .vjs-progress-tooltip { /* Corrected selector to match common pattern */
-     background-color: #1e1e2f; /* Input background color */
-     color: #e0e0e0; /* Light gray text */
-     border-radius: 4px;
-     padding: 5px 8px;
-     font-size: 0.8rem;
- }
- 
- 
- /* Menu buttons (e.g., for playback rates, subtitles) */
- .video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item:hover,
- .video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item.vjs-selected {
-     background-color: #252540; /* Darker background on hover/selected */
-     color: #4caf50; /* Green accent for selected/hovered items */
- }
- 
- .video-js .vjs-menu-button-popup .vjs-menu {
-     background-color: rgba(20, 25, 37, 0.95); /* Darker blue, transparent */
-     border: 1px solid #4caf50; /* Green accent border */
-     border-radius: 4px;
-     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
- }
- 
- .video-js .vjs-button > .vjs-icon-placeholder:before {
-     font-size: 1.2em; /* Icon size relative to control size */
-     line-height: 1.8; /* Adjust line height to help centering */
- }
- 
- 
- /* Hide unneeded controls (from both original themes) */
- .video-js .vjs-text-track-display,
- .video-js .vjs-captions-button,
- .video-js .vjs-subtitles-button,
- .video-js .vjs-audio-button,
- .vjs-chapters-button, /* Corrected selector */
- .video-js .vjs-descriptions-button {
-     display: none !important;
- }
- 
- 
- /* --- Animations --- */
- @keyframes fadeIn {
-     from { opacity: 0; transform: translateY(10px); } /* Fade and slight move up */
-     to { opacity: 1; transform: translateY(0); }
- }
- 
- 
- /* --- Responsive Design (from new styles.css) --- */
- @media (max-width: 768px) {
-     .container {
-         padding: 20px; /* Slightly less padding on smaller screens */
-     }
- 
-     .grid-form {
-         grid-template-columns: 1fr; /* Stack form elements */
-         gap: 10px;
-         max-width: 100%; /* Allow form to fill container */
-     }
- 
-     .grid-form label {
-         text-align: left; /* Align labels left when stacked */
-         padding-top: 0; /* Remove top padding when stacked */
-     }
- 
-      .input-group {
-         grid-column: 1; /* Ensure input group takes the full column */
-      }
- 
-     #edit-modal .grid-form {
-          grid-template-columns: 1fr; /* Stack modal form elements */
-          gap: 10px;
-          max-width: 95%; /* Adjust modal width */
-     }
- 
-     #edit-modal .grid-form .input-group {
-          grid-column: 1; /* Ensure input group takes the full column in modal */
-     }
- 
-     .modal-buttons {
-         grid-column: 1; /* Ensure buttons take the full column */
-         justify-content: center; /* Center buttons when stacked */
-     }
- 
-     .gallery {
-         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjust min width for cards */
-         gap: 20px;
-     }
- 
-     .video-card img {
-         height: 180px; /* Adjust thumbnail height */
-     }
- 
-     th, td {
-         padding: 10px; /* Reduce table padding */
-     }
- }
- 
- @media (max-width: 480px) {
-     .container {
-         padding: 15px;
-     }
- 
-     h1 {
-         font-size: 1.3rem;
-     }
- 
-     h2 {
-         font-size: 1.1rem;
-     }
- 
-     button {
-         padding: 8px 16px; /* Smaller button padding */
-         font-size: 0.8rem;
-     }
- 
-     .grid-form input, .grid-form select, .grid-form button {
-           padding: 8px;
-           font-size: 0.8rem;
-     }
- 
-      #edit-modal .grid-form {
-           padding: 20px;
-      }
- 
- 
-     .gallery {
-           gap: 15px;
-      }
- 
-     .video-card img {
-         height: 140px; /* Further adjust thumbnail height */
-     }
- 
-     th, td {
-         padding: 8px; /* Further reduce table padding */
-     }
- }
+/* --- Base Styles --- */
+body {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
+    color: #f0e6ff;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px;
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    min-height: calc(100vh - 60px);
+    border: 1px solid rgba(255, 0, 128, 0.2);
+}
+
+/* --- Header --- */
+header {
+    background: rgba(20, 10, 30, 0.9);
+    color: #f0e6ff;
+    text-align: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 0, 128, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 20px rgba(255, 0, 128, 0.1);
+}
+
+header img {
+    max-height: 80px;
+    margin-bottom: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.3));
+    transition: all 0.3s ease;
+}
+
+header a:hover img {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 15px rgba(255, 0, 128, 0.5));
+}
+
+/* --- Logo --- */
+.logo {
+    max-height: 80px;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.3));
+    transition: all 0.3s ease;
+}
+
+a:hover .logo {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 15px rgba(255, 0, 128, 0.5));
+}
+
+/* --- Typography --- */
+h1, h2, h3 {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+h2 {
+    font-size: 1.2rem;
+}
+
+h3 {
+    font-size: 1rem;
+}
+
+.disclaimer {
+    text-align: center;
+    margin: 30px 0;
+    color: #c77dff;
+    font-size: 0.85rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.8;
+}
+
+/* --- Forms --- */
+.grid-form {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    margin-bottom: 30px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.grid-form label {
+    text-align: right;
+    padding-top: 10px;
+    color: #c77dff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.grid-form input, .grid-form select, .grid-form button {
+    width: 100%;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid rgba(199, 125, 255, 0.3);
+    background: rgba(10, 5, 20, 0.6);
+    color: #f0e6ff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.grid-form input:focus, .grid-form select:focus {
+    outline: none;
+    border-color: #ff0080;
+    box-shadow: 0 0 0 3px rgba(255, 0, 128, 0.2),
+                inset 0 0 20px rgba(255, 0, 128, 0.1);
+    background: rgba(20, 10, 30, 0.8);
+}
+
+.grid-form select {
+    appearance: none;
+    cursor: pointer;
+}
+
+.grid-form input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.grid-form input[type="number"]::-webkit-inner-spin-button,
+.grid-form input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+    display: none;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    grid-column: 2;
+}
+
+.input-group input {
+    flex: 1;
+    width: auto;
+}
+
+.input-group button {
+    width: auto;
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+}
+
+/* --- Buttons --- */
+button {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(255, 0, 128, 0.3);
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Specific button styles */
+#logout-button {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+    margin-bottom: 30px;
+}
+
+#logout-button:hover {
+    box-shadow: 0 4px 15px rgba(255, 0, 110, 0.5);
+}
+
+#refresh-shares {
+    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+    color: #fff !important;
+    margin-bottom: 20px;
+}
+
+#refresh-shares:hover {
+    box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+}
+
+/* Action buttons in table */
+.copy-button, .edit-button, .delete-button {
+    margin-right: 10px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+}
+
+.copy-button {
+    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
+}
+
+.edit-button {
+    background: linear-gradient(135deg, #b5179e 0%, #f72585 100%);
+}
+
+.delete-button {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+}
+
+/* --- Messages --- */
+.error-message {
+    color: #ff4458;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    text-shadow: 0 0 10px rgba(255, 68, 88, 0.5);
+}
+
+.success-message {
+    color: #ff6ec7;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    text-shadow: 0 0 10px rgba(255, 110, 199, 0.5);
+}
+
+/* --- Table --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid rgba(199, 125, 255, 0.1);
+    font-size: 0.9rem;
+}
+
+th {
+    background: rgba(20, 10, 30, 0.8);
+    color: #ff6ec7;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid rgba(255, 0, 128, 0.3);
+}
+
+td {
+    color: #f0e6ff;
+}
+
+tr {
+    transition: all 0.2s ease;
+}
+
+tr:hover {
+    background: rgba(255, 0, 128, 0.1);
+    transform: translateX(2px);
+}
+
+td a {
+    color: #ff6ec7;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+td a:hover {
+    color: #ff0080;
+    text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+    text-decoration: underline;
+}
+
+/* --- Modal --- */
+#edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.95) 0%, rgba(60, 20, 80, 0.95) 100%);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 0, 128, 0.3);
+    z-index: 1000;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(255, 0, 128, 0.2);
+    backdrop-filter: blur(20px);
+    max-width: 500px;
+    width: 90%;
+}
+
+#edit-modal h3 {
+    margin-top: 0;
+}
+
+.modal-buttons {
+    grid-column: 2;
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+/* --- Login/Admin Sections --- */
+#login-section, #admin-content {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* --- Gallery Styles --- */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+    padding: 30px 0;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.video-card {
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 0, 128, 0.2);
+    position: relative;
+}
+
+.video-card.tag-collection {
+    border-color: rgba(114, 9, 183, 0.4);
+}
+
+.video-card .tag-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 10px rgba(114, 9, 183, 0.5);
+    z-index: 2;
+}
+
+.video-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 0, 128, 0.05) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.video-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(255, 0, 128, 0.2);
+    border-color: rgba(255, 0, 128, 0.4);
+}
+
+.video-card:hover::before {
+    opacity: 0.5;
+    animation: sheen 0.8s ease-out;
+}
+
+@keyframes sheen {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+.video-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.video-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background-color: #0a0a0f;
+    display: block;
+}
+
+.video-card .title {
+    padding: 15px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #f0e6ff;
+}
+
+#loading {
+    text-align: center;
+    padding: 20px;
+    color: #c77dff;
+    font-size: 0.85rem;
+    display: none;
+}
+
+/* --- Video Player Styles --- */
+.video-container {
+    margin: 20px 0;
+    text-align: center;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.video-js {
+    color: #f0e6ff;
+    max-width: 1920px;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #000;
+    margin: 0 auto;
+}
+
+.video-js .vjs-control-bar {
+    background: rgba(20, 10, 30, 0.9);
+    border-top: 1px solid rgba(255, 0, 128, 0.3);
+    height: 60px;
+    border-radius: 0 0 8px 8px;
+}
+
+.video-js .vjs-control:not(.vjs-disabled):hover,
+.video-js .vjs-big-play-button:hover {
+    color: #ff0080;
+    text-shadow: 0 0 10px rgba(255, 0, 128, 0.7);
+}
+
+.video-js .vjs-big-play-button {
+    background: rgba(20, 10, 30, 0.8);
+    border: 2px solid #ff0080;
+    border-radius: 50%;
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    margin-top: -1em;
+    margin-left: -1em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-js .vjs-big-play-button .vjs-icon-placeholder:before {
+    font-size: 1.2em;
+    line-height: inherit;
+}
+
+.video-js .vjs-play-progress,
+.video-js .vjs-volume-level {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+}
+
+.video-js .vjs-slider {
+    background: rgba(10, 5, 20, 0.6);
+}
+
+.video-js .vjs-load-progress {
+    background: rgba(255, 0, 128, 0.3);
+}
+
+.video-js .vjs-load-progress div {
+    background: rgba(255, 0, 128, 0.5);
+}
+
+.video-js .vjs-progress-control .vjs-progress-holder {
+    height: 10px;
+}
+
+.video-js .vjs-time-control {
+    color: #f0e6ff;
+    font-size: 0.9rem;
+}
+
+.video-js .vjs-time-tooltip,
+.vjs-progress-tooltip {
+    background: rgba(20, 10, 30, 0.9);
+    color: #f0e6ff;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(255, 0, 128, 0.3);
+}
+
+.video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item:hover,
+.video-js .vjs-menu-button-popup .vjs-menu .vjs-menu-item.vjs-selected {
+    background: rgba(255, 0, 128, 0.2);
+    color: #ff0080;
+}
+
+.video-js .vjs-menu-button-popup .vjs-menu {
+    background: rgba(20, 10, 30, 0.95);
+    border: 1px solid rgba(255, 0, 128, 0.3);
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.video-js .vjs-button > .vjs-icon-placeholder:before {
+    font-size: 1.2em;
+    line-height: 1.8;
+}
+
+/* Hide unneeded controls */
+.video-js .vjs-text-track-display,
+.video-js .vjs-captions-button,
+.video-js .vjs-subtitles-button,
+.video-js .vjs-audio-button,
+.vjs-chapters-button,
+.video-js .vjs-descriptions-button {
+    display: none !important;
+}
+
+/* --- Scrollbars --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 5, 20, 0.6);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .grid-form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        max-width: 100%;
+    }
+
+    .grid-form label {
+        text-align: left;
+        padding-top: 0;
+    }
+
+    .input-group {
+        grid-column: 1;
+    }
+
+    #edit-modal .grid-form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        max-width: 95%;
+    }
+
+    #edit-modal .grid-form .input-group {
+        grid-column: 1;
+    }
+
+    .modal-buttons {
+        grid-column: 1;
+        justify-content: center;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .video-card img {
+        height: 180px;
+    }
+
+    th, td {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    h2 {
+        font-size: 1.1rem;
+    }
+
+    button {
+        padding: 6px 12px;
+        font-size: 0.7rem;
+    }
+
+    .grid-form input, .grid-form select, .grid-form button {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+
+    #edit-modal .grid-form {
+        padding: 20px;
+    }
+
+    .gallery {
+        gap: 15px;
+    }
+
+    .video-card img {
+        height: 140px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+}
+
+/* --- Video Player Metadata --- */
+.video-metadata {
+    margin-top: 30px;
+    padding: 30px;
+    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 0, 128, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.video-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.video-description {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(10, 5, 20, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(199, 125, 255, 0.2);
+}
+
+.video-description h3 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.video-description p {
+    margin: 0;
+    line-height: 1.8;
+    color: #f0e6ff;
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.metadata-section {
+    background: rgba(10, 5, 20, 0.4);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(199, 125, 255, 0.2);
+}
+
+.metadata-section h3 {
+    margin-bottom: 15px;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.metadata-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.metadata-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.metadata-label {
+    color: #c77dff;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.performer {
+    padding: 10px;
+    background: rgba(255, 0, 128, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 0, 128, 0.2);
+}
+
+.performer-name {
+    font-weight: 500;
+    color: #ff6ec7;
+    font-size: 1.1rem;
+}
+
+.performer-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+.performer-links a {
+    color: #c77dff;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.performer-links a:hover {
+    color: #ff0080;
+    text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tag-item {
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(114, 9, 183, 0.3);
+}
+
+.external-link {
+    color: #ff6ec7;
+    text-decoration: none;
+    word-break: break-all;
+    transition: all 0.2s ease;
+    padding: 5px 0;
+}
+
+.external-link:hover {
+    color: #ff0080;
+    text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+}
+
+/* Responsive adjustments for metadata */
+@media (max-width: 768px) {
+    .video-metadata {
+        margin-top: 20px;
+        padding: 20px;
+    }
+    
+    .video-title {
+        font-size: 1.5rem;
+    }
+    
+    .metadata-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .performer-links {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
  

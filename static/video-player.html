@@ -9,13 +9,115 @@
 </head>
 <body>
     <div class="container">
-        <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo" class="logo">
+        <a href="/" style="display: block; text-align: center; margin-bottom: 20px;">
+            <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo" class="logo">
+        </a>
         <div class="video-container">
             <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" width="800">
                 <source src="/share/{{ share_id }}/stream.m3u8" type="application/x-mpegURL">
                 Your browser does not support the video tag.
             </video>
         </div>
+        
+        {% if video_details %}
+        <div class="video-metadata">
+            <h1 class="video-title">{{ video_details.title or video_name }}</h1>
+            
+            {% if video_details.details %}
+            <div class="video-description">
+                <h3>Description</h3>
+                <p>{{ video_details.details }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="metadata-grid">
+                {% if video_details.performers %}
+                <div class="metadata-section">
+                    <h3>Performers</h3>
+                    <div class="metadata-list">
+                        {% for performer in video_details.performers %}
+                        <div class="metadata-item performer">
+                            <span class="performer-name">{{ performer.name }}</span>
+                            {% if performer.url or performer.twitter or performer.instagram %}
+                            <div class="performer-links">
+                                {% if performer.url %}
+                                <a href="{{ performer.url }}" target="_blank" rel="noopener noreferrer">Website</a>
+                                {% endif %}
+                                {% if performer.twitter %}
+                                <a href="https://twitter.com/{{ performer.twitter }}" target="_blank" rel="noopener noreferrer">Twitter</a>
+                                {% endif %}
+                                {% if performer.instagram %}
+                                <a href="https://instagram.com/{{ performer.instagram }}" target="_blank" rel="noopener noreferrer">Instagram</a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if video_details.studio %}
+                <div class="metadata-section">
+                    <h3>Studio</h3>
+                    <div class="metadata-item">
+                        {% if video_details.studio.url %}
+                        <a href="{{ video_details.studio.url }}" target="_blank" rel="noopener noreferrer">{{ video_details.studio.name }}</a>
+                        {% else %}
+                        <span>{{ video_details.studio.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if video_details.tags %}
+                <div class="metadata-section">
+                    <h3>Tags</h3>
+                    <div class="tag-list">
+                        {% for tag in video_details.tags %}
+                        <span class="tag-item">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if video_details.urls %}
+                <div class="metadata-section">
+                    <h3>Links</h3>
+                    <div class="metadata-list">
+                        {% for url in video_details.urls %}
+                        <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="external-link">{{ url }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if video_details.date or video_details.duration or video_details.resolution %}
+                <div class="metadata-section">
+                    <h3>Details</h3>
+                    <div class="metadata-list">
+                        {% if video_details.date %}
+                        <div class="metadata-item">
+                            <span class="metadata-label">Date:</span> {{ video_details.date }}
+                        </div>
+                        {% endif %}
+                        {% if video_details.duration %}
+                        <div class="metadata-item">
+                            <span class="metadata-label">Duration:</span> {{ (video_details.duration / 60) | round(1) }} minutes
+                        </div>
+                        {% endif %}
+                        {% if video_details.resolution %}
+                        <div class="metadata-item">
+                            <span class="metadata-label">Resolution:</span> {{ video_details.resolution }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
         <p class="disclaimer">{{ disclaimer }}</p>
     </div>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
