@@ -1,135 +1,193 @@
 ![Logo Placeholder](static/logo-placeholder@0.5x.png)
 
-**HornyProxy** 🍒 is a FastAPI microservice for securely sharing videos from your Stash adult media platform. It offers a no frills dark UI for playback and a secure admin panel with JWT authentication to manage your private shares.
+# 🍒 Horny Proxy - Share Your Stash with Style
 
-## Key Features
+**HornyProxy** is a sleek, secure proxy service for sharing videos from your Stash collection. Built with FastAPI and wrapped in a gorgeous purple-themed UI, it's the premium way to share your private content with trusted viewers.
+
+## 🔥 What's New
+
+We've completely redesigned Horny Proxy with a focus on aesthetics and functionality:
+
+### 💜 Purple Passion UI
+- **Dark Mode Design**: Sultry purple/pink/red color scheme that's easy on the eyes
+- **Glassmorphism Effects**: Modern frosted glass aesthetics with subtle animations
+- **Full-Window Admin Panel**: Responsive 2x2 grid layout that maximizes screen space
+- **Mobile-First**: Looks stunning on every device
+
+### 🏷️ Tag Sharing System
+Share entire collections with a single link:
+- Group videos by tag for themed collections
+- Custom share IDs for memorable URLs
+- Gallery view with cached thumbnails
+- Individual video playback within collections
+
+### 🏠 Public Gallery
+- Curated homepage for featured content
+- Lazy-loading infinite scroll
+- Collection badges for tag shares
+- No passwords allowed (keeps it family-friendly 😉)
+
+## 🚀 Key Features
 
 | Feature | Description |
 |:--------|:------------|
-| **Public Playback** | Smooth Video.js player with seeking, speed control (0.5x-2x), and fullscreen mode |
-| **Admin Panel** | Easily create, edit, delete, and track hits on shared links |
-| **Secure Sharing** | Unique, expiring links with optional password protection |
-| **Resolution Options** | Choose streaming quality: LOW, MEDIUM, or HIGH |
-| **Stash Integration** | Streams content from Stash without exposing API keys |
+| **Smooth Playback** | Video.js player with variable speed control (0.5x-2x) |
+| **Admin Dashboard** | Comprehensive share management interface |
+| **Secure Sharing** | Password-protected, expiring links |
+| **Resolution Control** | Choose streaming quality: LOW, MEDIUM, or HIGH |
+| **Hit Tracking** | Anonymous view counting for analytics |
+| **Smart Time Display** | Relative expiration times (30m, 8h, 7d) |
 
-## Prerequisites
+## 🔧 Installation & Setup
 
+### Prerequisites
 * Python 3.8+
-* Mamba (or Conda) for environment management
+* Mamba/Conda or pip
 * Running Stash instance with API access
 
-## Install & configure
+### Quick Start
 
-1. Clone the repo:
-
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/io-flux/horny-proxy
 cd horny-proxy
 ```
 
-2. Get dependencies
+2. **Set up your environment:**
 
-a. Either use `mamba` or `conda` (recommended):
-
+Using mamba (recommended):
 ```bash
-mamba create -n hornyproxy python=3.8 fastapi uvicorn requests pyyaml sqlalchemy pydantic python-jose cryptography passlib
+mamba create -n hornyproxy python=3.8 fastapi uvicorn requests pyyaml sqlalchemy pydantic python-jose cryptography passlib jinja2
 mamba activate hornyproxy
 ```
 
-b. Or just use `pip`:
-
-```
-# Ensure you are in `/path/to/horny-proxy`
+Or with pip:
+```bash
 pip install -r requirements.txt
 ```
 
-3. Fill in your details in `config.yaml`:
-
-```
-# Ensure you are in `/path/to/horny-proxy`
-# Optional: start with the example configuration:
-cp example-config.yaml config.yaml
-
-# Use nano or your preferred text editor:
-nano config.yaml
-```
-
-
+3. **Configure your instance** in `config.yaml`:
 ```yaml
 horny:
-  # host specifies which interface horny-proxy will bind to; then pick an open port
-  # 127.0.0.1 will only be available locally (or over a local reverse proxy)
-  # 0.0.0.0 will be available to anyone that can reach your device on the port specified below
   host: "127.0.0.1"
-  port: 6669
-
-  # base_domain is used to generate share links
-  base_domain: "https://example.com"
-
-  # username and password for creating / managing shares
-  admin_username: "admin"
+  port: 6669                         # Nice
+  base_domain: "https://family.fun"  # Your domain here
+  admin_username: "daddy"
   admin_password: "your_secure_password"
-
-  # default resolution when creating a new share
-  default_resolution: "MEDIUM"  # LOW, MEDIUM, HIGH
-
-  # the length of the UUID generated for new shares, e.g., 8 characters might look like `https://horny-proxy.club/share/gkCXaxGw`
+  default_resolution: "MEDIUM"
   share_id_length: 8
 
 stash:
-  # the IP address and port of your stash instance
   server_ip: "127.0.0.1"
-  port: 999
+  port: 9999
+  api_key: "your_stash_api_key"
 
-  # your stash instance's API key
-  api_key: "yourStashAPIKeyHere"
-
-# text displayed below player on video shares
-disclaimer: "For private use only. No unauthorized sharing."
+# This is not legal advice but you might consider adopting a no-nonsense disclaimer if there is any chance of anyone outside your family seeing it
+disclaimer: "This content is shared for private use only. Unauthorized distribution is prohibited. This site does not encourage/condone illegal sexual conduct and is intended solely to provide visual pleasure for ADULTS only. Please leave this site if you are under 18 or if you find mature/explicit content offensive. All mature/explicit content on this site is strictly in compliance with 18 U.S.C. § 2257, i.e., all performers featured are 18 years or older of age. This site and all its associated domains being in accordance with 17 U.S.C. § 512 and the Digital Millennium Copyright Act, responds to infringement notices within 24 hours."
+"
 ```
 
-4. Optional: customize logo 
+4. **Add your branding:**
+- Place your logo in `static/localized/` (logo.png, logo@2x.png, logo@3x.png)
+- The purple theme is pre-configured and ready to use
 
-Add your personal logos in `static/localized/` (e.g., `logo.png`, `logo@2x.png`). 
+## 💜 Admin Panel
 
-Without them, default placeholders in `static/` are used.
+Access the admin panel at `http://stashtube.xxx/__admin`  # enter your domain here
 
-## Usage
+### Video Sharing
+1. Enter Stash video ID or use "Lookup" for auto-fill
+2. Set expiration (1-365 days)
+3. Choose resolution and optional password
+4. Toggle "Feature on Home?" for gallery display
+5. Copy your share link
 
-1. Start the server:
+### Tag Collections
+1. Enter a tag name to find matching content
+2. Click "Lookup" to verify the tag exists
+3. Choose share ID type:
+   - **Random**: Auto-generated unique ID
+   - **Tag Name**: Uses the tag as the URL path
+   - **Custom**: Create your own memorable URL
+4. Configure options and share
 
-```bash
-python hornyproxy.py
-```
+### Share Management
+- **Real-time Stats**: View hit counts and expiration times
+- **Quick Actions**: Copy, edit, or delete shares
+- **Bulk Refresh**: Update all data with one click
 
-Add `--debug` for detailed logs:
+## 🎬 Viewing Experience
 
-```bash
-python hornyproxy.py --debug
-```
+### Video Player
+- Clean, modern player with purple-themed controls
+- Full metadata display:
+  - Performer information with social links
+  - Tag system with visual pills
+  - Studio details
+  - External URLs
+- Password protection with styled modal
+- Responsive design for all devices
 
-2. Server runs on the host/port in `config.yaml` (default: http://127.0.0.1:6669).
+### Gallery Features
+- Smooth infinite scroll
+- Hover animations with subtle sheen effects
+- Collection indicators for tag shares
+- Fast-loading cached thumbnails
 
-3. Access the admin panel:
-   - Open http://127.0.0.1:6669/static/admin.html
-   - Log in with configured credentials
+## 🔒 Security & Privacy
 
-4. Share a video:
-   - Enter video name or fetch title from Stash
-   - Add Stash ID, validity days, resolution, and optional password
-   - Click "Share" and copy the link
+- **JWT Authentication**: Secure admin access
+- **Password Protection**: Optional per-share passwords
+- **Auto-Expiration**: Links expire on schedule
+- **API Key Protection**: Stash credentials stay private
+- **Anonymous Tracking**: No personal data collected
 
-5. Watch the content:
-   - Open the share URL and enter password if required 😘
+## 🎨 Customization
 
-## Security & Customization 🔒
+### Branding Options
+1. **Logo**: Support for high-DPI displays
+2. **Disclaimer**: Configurable legal text
+3. **Domain**: Set your base URL for proper links
+4. **Gallery**: Curate your public content
 
-| Feature | Description |
-|:--------|:------------|
-| **JWT Authentication** | Admin access is securely protected |
-| **Password Protection** | Optional safeguard for individual shares |
-| **Expiring Links** | Shares auto-expire for added safety |
-| **No API Exposure** | Keeps your Stash API key hidden |
+### Advanced Features
+- Memorable custom share IDs
+- Tag-based bulk sharing
+- Per-share resolution settings
+- Flexible expiration periods
 
-**Make It Yours**: Add your logo at `static/localized/logo.png` (with @2x, @3x for crispness), edit the disclaimer in `config.yaml`, and tweak `static/styles.css` to style your spicy setup 🍓.
+## 🚨 Troubleshooting
+
+**Login Issues?**
+Clear your browser cache and localStorage, then try again.
+
+**Videos Not Playing?**
+Verify your Stash API key and server accessibility.
+
+**How to Share Collections?**
+Tag your videos in Stash, then use the tag sharing feature.
+
+**Missing Thumbnails?**
+Horny Proxy will cache them on first access.
+
+## 📝 Recent Updates
+
+- **Tag Sharing**: Share entire collections, not just individual videos
+- **Purple UI Overhaul**: Modern dark theme with glassmorphism
+- **Responsive Admin**: Full-window 2x2 grid layout
+- **Public Gallery**: Showcase selected content
+- **Smart Time Display**: Human-readable expiration times
+- **Rich Metadata**: Complete video details from Stash
+
+## 🤝 Contributing
+
+We welcome contributions! Feel free to open issues or submit pull requests.
+
+## ⚖️ Legal Notice
+
+Users are responsible for ensuring all shared content complies with applicable laws. All performers must be 18+. See the configured disclaimer for detailed terms.
+
+---
+
+*Built with 💜 for the discerning content curator*
 
