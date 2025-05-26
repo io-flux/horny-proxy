@@ -150,6 +150,10 @@ Access the admin panel at `http://stashtube.xxx/__admin`  # enter your domain he
 3. **Domain**: Set your base URL for proper links
 4. **Gallery**: Curate your public content
 
+### Example Screenshots
+<div style="display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px;"><a href="https://github.com/io-flux/horny-proxy/raw/main/static/screenshot1.jpg"><img src="https://github.com/io-flux/horny-proxy/raw/main/static/screenshot1.jpg?raw=true" alt="Admin back end screenshot" width="300" style="border: 2px solid #ff69b4; border-radius: 5px;"></a> <a href="https://github.com/io-flux/horny-proxy/raw/main/static/screenshot2.jpg?"><img src="https://github.com/io-flux/horny-proxy/raw/main/static/screenshot2.jpg?raw=true" alt="Tag front end screenshot" width="300" style="border: 2px solid #ff69b4; border-radius: 5px;"></a></div>
+
+
 ### Advanced Features
 - Memorable custom share IDs
 - Tag-based bulk sharing
