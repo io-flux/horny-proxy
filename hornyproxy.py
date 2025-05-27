@@ -719,6 +719,7 @@ async def share_page(share_id: str, password_verified: bool = False, request: Re
                 disclaimer = DISCLAIMER,
                 video_details = video_details,
                 site_name = SITE_NAME,
+                site_motto = SITE_MOTTO,
                 social_links = SOCIAL_LINKS)
         return HTMLResponse(html)
 
@@ -922,6 +923,7 @@ async def tag_video_page(share_id: str, video_id: int, request: Request = None):
             disclaimer=DISCLAIMER,
             video_details=video,
             site_name=SITE_NAME,
+            site_motto=SITE_MOTTO,
             social_links=SOCIAL_LINKS)
         return HTMLResponse(html)
 
@@ -1497,6 +1499,16 @@ async def get_video_details(stash_video_id: int) -> dict | None:
                         framerate
                         bitrate
                     }
+                    files {
+                        path
+                        basename
+                        size
+                        duration
+                        video_codec
+                        audio_codec
+                        width
+                        height
+                    }
                     performers {
                         name
                         gender
@@ -1567,6 +1579,7 @@ async def get_video_details(stash_video_id: int) -> dict | None:
             "urls": scene.get("urls", []),
             "duration": scene.get("file", {}).get("duration"),
             "resolution": f"{scene.get('file', {}).get('width')}x{scene.get('file', {}).get('height')}" if scene.get("file") else None,
+            "files": scene.get("files", []),  # Include files array for fallback title
             "performers": [
                 {
                     "name": p["name"],

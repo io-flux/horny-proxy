@@ -8,6 +8,13 @@ social_links:  # Optional: social media links displayed at bottom of pages
     logo: "https://bsky.social/favicon.ico"
     url: "https://bsky.app/profile/example.bsky.social"
 
+# Font customization: To override fonts, place .woff2 files in ./static/localized/fonts/ with these exact names:
+#   - motto_font.woff2    (for site motto text)
+#   - title_font.woff2    (for headings)
+#   - button_font.woff2   (for buttons)
+#   - disclaimer_font.woff2 (for disclaimer text)
+#   - base_font.woff2     (for body text)
+
 horny:
   host: 127.0.0.1
   port: 6669

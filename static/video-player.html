@@ -3,89 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ video_name }} - {{ site_name or 'Horny Proxy' }}</title>
+    <title>{{ video_name or 'Video' }} - {{ site_name or 'Horny Proxy' }}</title>
     <link href="/static/styles.css" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
-    <style>
-        /* Override aspect ratio to allow natural video dimensions */
-        .video-js {
-            aspect-ratio: unset !important;
-            max-height: 80vh;
-        }
-        
-        /* Make control bar chunkier */
-        .video-js .vjs-control-bar {
-            height: 50px !important;
-            font-size: 1.1em;
-        }
-        
-        /* Remove rounded corners on control bar */
-        .video-js .vjs-control-bar {
-            border-radius: 0 !important;
-        }
-        
-        /* Style skip buttons */
-        .vjs-skip-backward-15,
-        .vjs-skip-forward-30 {
-            font-family: VideoJS;
-            font-weight: normal;
-            font-style: normal;
-        }
-        
-        .vjs-skip-backward-15:before {
-            content: "\f115"; /* replay icon */
-        }
-        
-        .vjs-skip-forward-30:before {
-            content: "\f114"; /* forward icon */
-        }
-        
-        /* Hide playback rate button */
-        .vjs-playback-rate {
-            display: none !important;
-        }
-        
-        /* Move volume to the right */
-        .vjs-volume-panel {
-            order: 8;
-            margin-right: 1em;
-        }
-        
-        .vjs-fullscreen-control {
-            order: 9;
-        }
-        
-        /* Social links styling */
-        .social-links {
-            text-align: center;
-            margin: 40px 0 20px 0;
-            padding: 20px 0;
-            border-top: 1px solid rgba(180, 0, 90, 0.2);
-        }
-        .social-links a {
-            display: inline-block;
-            margin: 0 10px;
-            opacity: 0.25;
-            transition: opacity 0.3s ease;
-        }
-        .social-links a:hover {
-            opacity: 0.5;
-        }
-        .social-links img {
-            width: 64px;
-            height: 64px;
-            vertical-align: middle;
-            display: inline-block;
-        }
-    </style>
+    <link href="/static/video-player.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <a href="/" style="display: block; text-align: center; margin-bottom: 20px;">
             <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo" class="logo">
         </a>
+        {% if site_motto %}
+        <div class="site-motto">{{ site_motto }}</div>
+        {% endif %}
         <div class="video-container">
-            <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" autoplay muted>
+            <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" autoplay muted poster="/static/default_thumbnail.jpg">
                 <source src="/share/{{ share_id }}/stream.m3u8" type="application/x-mpegURL">
                 Your browser does not support the video tag.
             </video>
@@ -93,7 +25,17 @@
         
         {% if video_details %}
         <div class="video-metadata">
-            <h1 class="video-title">{{ video_details.title or video_name }}</h1>
+            <h1 class="video-title">
+                {% if video_details.title %}
+                    {{ video_details.title }}
+                {% elif video_details.files and video_details.files[0].basename %}
+                    {{ video_details.files[0].basename }}
+                {% elif video_name %}
+                    {{ video_name }}
+                {% else %}
+                    Untitled Video
+                {% endif %}
+            </h1>
             
             {% if video_details.details %}
             <div class="video-description">
@@ -216,11 +158,11 @@
             controlBar: {
                 children: [
                     'playToggle',
-                    'SkipBackwardButton',
-                    'SkipForwardButton',
                     'currentTimeDisplay',
                     'progressControl',
                     'durationDisplay',
+                    'SkipBackwardButton',
+                    'SkipForwardButton',
                     'volumePanel',
                     'fullscreenToggle'
                 ]
@@ -236,7 +178,7 @@
                 Button.apply(this, arguments);
                 this.addClass('vjs-skip-backward-15');
                 this.controlText('Skip backward 15 seconds');
-                this.el().innerHTML = '<span style="font-size:1.5em;vertical-align:middle;">⏪ 15s</span>';
+                this.el().innerHTML = '<span class="vjs-icon-placeholder"></span>';
             },
             handleClick: function() {
                 player.currentTime(Math.max(0, player.currentTime() - 15));
@@ -249,7 +191,7 @@
                 Button.apply(this, arguments);
                 this.addClass('vjs-skip-forward-30');
                 this.controlText('Skip forward 30 seconds');
-                this.el().innerHTML = '<span style="font-size:1.5em;vertical-align:middle;">30s ⏩</span>';
+                this.el().innerHTML = '<span class="vjs-icon-placeholder"></span>';
             },
             handleClick: function() {
                 player.currentTime(Math.min(player.duration(), player.currentTime() + 30));
@@ -260,10 +202,14 @@
         videojs.registerComponent('SkipBackwardButton', SkipBackwardButton);
         videojs.registerComponent('SkipForwardButton', SkipForwardButton);
         
-        // Add buttons to control bar
+        // Add buttons to control bar after player is ready
         player.ready(() => {
-            player.controlBar.addChild('SkipBackwardButton', {}, 1);
-            player.controlBar.addChild('SkipForwardButton', {}, 2);
+            if (!player.controlBar.getChild('SkipBackwardButton')) {
+                player.controlBar.addChild('SkipBackwardButton', {}, 2);
+            }
+            if (!player.controlBar.getChild('SkipForwardButton')) {
+                player.controlBar.addChild('SkipForwardButton', {}, 4);
+            }
         });
         
         var src = '/share/{{ share_id }}/stream.m3u8';

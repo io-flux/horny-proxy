@@ -5,12 +5,45 @@
     width: 100%;
     aspect-ratio: 16 / 9; /* Maintain aspect ratio */
     margin: 0 auto;
+    position: relative; /* For gradient effect */
+}
+
+/* Gradient effect on video load */
+.video-js::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: radial-gradient(circle at center, 
+        rgba(255, 42, 109, 0.3) 0%, 
+        rgba(255, 42, 109, 0.15) 30%, 
+        rgba(184, 0, 107, 0.1) 50%, 
+        rgba(0, 0, 0, 0) 70%);
+    pointer-events: none;
+    z-index: -1;
+    animation: fadeInGradient 1.5s ease-out;
+}
+
+@keyframes fadeInGradient {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .video-js .vjs-control-bar {
-    background-color: #2A1B3D; /* Dark purple */
-    height: 60px; /* Larger control bar */
+    background-color: rgba(255, 42, 109, 0.15); /* Dark pink with transparency */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    height: 48px; /* Reasonable height */
     border-radius: 0 0 8px 8px;
+    border-top: 1px solid rgba(255, 110, 199, 0.3);
 }
 
 .video-js .vjs-play-progress,
@@ -19,42 +52,57 @@
 }
 
 .video-js .vjs-load-progress {
-    background-color: #1C1326; /* Dark gray */
+    background-color: rgba(255, 42, 109, 0.2); /* Pink tinted */
 }
 
 .video-js .vjs-control {
-    width: 50px; /* Larger buttons */
-    height: 50px;
-    line-height: 50px;
+    width: 36px; /* Smaller, reasonable size */
+    height: 36px;
+    line-height: 36px;
+    font-size: 1.2em;
 }
 
 .video-js .vjs-play-control,
 .video-js .vjs-volume-panel,
 .video-js .vjs-fullscreen-control,
-.video-js .vjs-playback-rate {
-    color: #00F5FF; /* Cyan */
+.video-js .vjs-playback-rate,
+.vjs-skip-backward-15,
+.vjs-skip-forward-30 {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .video-js .vjs-play-control:hover,
 .video-js .vjs-volume-panel:hover,
 .video-js .vjs-fullscreen-control:hover,
-.video-js .vjs-playback-rate:hover {
+.video-js .vjs-playback-rate:hover,
+.vjs-skip-backward-15:hover,
+.vjs-skip-forward-30:hover {
     color: #FF2A6D; /* Pink on hover */
+    background-color: rgba(255, 42, 109, 0.2);
+    border-radius: 4px;
 }
 
 .video-js .vjs-progress-control .vjs-progress-holder {
-    height: 10px; /* Thicker progress bar */
+    height: 8px; /* Thinner progress bar */
+    margin-top: 19px;
 }
 
 .video-js .vjs-button > .vjs-icon-placeholder:before {
-    font-size: 24px; /* Larger icons */
-    line-height: 50px;
+    font-size: 1.4em; /* Reasonable icon size */
+    line-height: 36px;
 }
 
 .video-js .vjs-time-tooltip,
 .video-js .vjs-progress-tooltip {
-    background-color: #1C1326;
-    color: #00F5FF;
+    background-color: rgba(255, 42, 109, 0.9);
+    color: #fff;
+    backdrop-filter: blur(5px);
+}
+
+/* Skip button custom styling */
+.vjs-skip-backward-15 .vjs-icon-placeholder:before,
+.vjs-skip-forward-30 .vjs-icon-placeholder:before {
+    font-size: 1.2em;
 }
 
 /* Hide unneeded controls */
