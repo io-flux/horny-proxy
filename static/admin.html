@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Horny Proxy</title>
+    <title>Admin Panel</title>
     <link rel="icon" type="image/x-icon" href="/static/localized/favicon.ico" onerror="this.onerror=null;this.href='/static/favicon.ico';">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/admin.css">
@@ -14,8 +14,10 @@
         <div id="login-section">
             <div class="admin-section" style="max-width: 400px; margin: 0 auto;">
                 <h2>Login</h2>
-                <form id="login-form" class="grid-form">
+                <form id="login-form" class="login-form">
+                    <label for="username">Username</label>
                     <input type="text" id="username" placeholder="Username" required>
+                    <label for="password">Password</label>
                     <input type="password" id="password" placeholder="Password" required>
                     <button type="submit">Login</button>
                 </form>
@@ -36,7 +38,7 @@
                             onerror="this.onerror=null;this.src='/static/logo.png';"
                         >
                     </a>
-                    <h1>Horny Proxy Admin Panel</h1>
+                    <h1><span id="site-name">Horny Proxy</span> Admin Panel</h1>
                 </div>
                 <div class="header-controls">
                     <button id="refresh-shares">Refresh All</button>
@@ -67,11 +69,14 @@
                             </select>
                             <label for="share-password">Password (optional)</label>
                             <input type="password" id="share-password" placeholder="Password">
-                            <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                <input type="checkbox" id="show-in-gallery">
-                                <label for="show-in-gallery" style="margin: 0; padding: 0; text-transform: none;">Feature on Home?</label>
+                            <div style="grid-column: 1 / -1; margin-top: 5px;">
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" id="show-in-gallery">
+                                    <span class="toggle-switch"></span>
+                                    <span class="checkbox-label">Feature on Home?</span>
+                                </label>
                             </div>
-                            <button type="submit" style="grid-column: 1 / -1; margin-top: 10px;">Share Video</button>
+                            <button type="submit" style="grid-column: 1 / -1;">Share Video</button>
                         </form>
                         <p id="share-message" class="success-message"></p>
                         <p id="share-error" class="error-message"></p>
@@ -87,10 +92,7 @@
                                 <button type="button" id="lookup-tag-button">Lookup</button>
                             </div>
                             <label for="tag-id">Tag ID</label>
-                            <input type="text" id="tag-id" placeholder="Auto-filled or enter manually" required>
-                            <div id="tag-info" style="display: none;">
-                                <p><strong>Found:</strong> <span id="found-tag-name"></span> (<span id="found-tag-count"></span> videos)</p>
-                            </div>
+                            <input type="text" id="tag-id" placeholder="Auto-filled after lookup" required readonly>
                             <label for="share-id-type">Share ID Type</label>
                             <select id="share-id-type" required>
                                 <option value="random" selected>Random</option>
@@ -109,11 +111,14 @@
                             </select>
                             <label for="tag-share-password">Password (optional)</label>
                             <input type="password" id="tag-share-password" placeholder="Password">
-                            <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                <input type="checkbox" id="tag-show-in-gallery">
-                                <label for="tag-show-in-gallery" style="margin: 0; padding: 0; text-transform: none;">Feature on Home?</label>
+                            <div style="grid-column: 1 / -1; margin-top: 5px;">
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" id="tag-show-in-gallery">
+                                    <span class="toggle-switch"></span>
+                                    <span class="checkbox-label">Feature on Home?</span>
+                                </label>
                             </div>
-                            <button type="submit" style="grid-column: 1 / -1; margin-top: 10px;">Share Tag</button>
+                            <button type="submit" style="grid-column: 1 / -1;">Share Tag</button>
                         </form>
                         <p id="tag-share-message" class="success-message"></p>
                         <p id="tag-share-error" class="error-message"></p>
@@ -175,9 +180,12 @@
                 </select>
                 <label for="edit-share-password">Password (optional)</label>
                 <input type="password" id="edit-share-password" placeholder="Password">
-                <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                    <input type="checkbox" id="edit-show-in-gallery">
-                    <label for="edit-show-in-gallery" style="margin: 0; padding: 0; text-transform: none;">Feature on Home?</label>
+                <div style="grid-column: 1 / -1; margin-top: 5px;">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="edit-show-in-gallery">
+                        <span class="toggle-switch"></span>
+                        <span class="checkbox-label">Feature on Home?</span>
+                    </label>
                 </div>
                 <div class="modal-buttons">
                     <button type="button" id="save-edit-button">Save Changes</button>

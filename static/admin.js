@@ -35,9 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lookupTagButton = document.getElementById('lookup-tag-button');
     const tagShareMessage = document.getElementById('tag-share-message');
     const tagShareError = document.getElementById('tag-share-error');
-    const tagInfo = document.getElementById('tag-info');
-    const foundTagName = document.getElementById('found-tag-name');
-    const foundTagCount = document.getElementById('found-tag-count');
 
     const sharedVideosTableBody = document.querySelector('#shared-videos-table tbody');
     const sharedTagsTableBody = document.querySelector('#shared-tags-table tbody');
@@ -55,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editError = document.getElementById('edit-error');
 
     let authToken = localStorage.getItem('horny_token');
+
+    // Store passwords for shares created in this session
+    const sharePasswords = {};
 
     function showLogin() {
         loginSection.style.display = 'flex'; 
@@ -330,6 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 shareForm.reset();
                 fetchSharedContent();
                 logDebug('Video shared successfully:', result);
+                // Store the password for this share
+                if (shareData.password) {
+                    const shareId = result.share_url.split('/').pop().split('?')[0];
+                    sharePasswords[shareId] = shareData.password;
+                }
             } catch (error) {
                 shareError.textContent = `Failed to share video: ${error.message}`;
                 logDebug('Failed to share video:', error);
@@ -353,22 +358,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 logDebug('Tag lookup response:', data);
                 
                 if (data && data.tag_info) {
-                    foundTagName.textContent = data.tag_info.name;
-                    foundTagCount.textContent = data.video_count;
                     tagIdInput.value = data.tag_info.id;
-                    tagInfo.style.display = 'block';
+                    tagIdInput.placeholder = `${data.tag_info.name} (${data.video_count} videos)`;
                     tagShareError.textContent = '';
                     logDebug('Tag found:', data.tag_info);
                 } else {
                     tagShareError.textContent = 'Tag not found or has no videos.';
-                    tagInfo.style.display = 'none';
                     tagIdInput.value = '';
+                    tagIdInput.placeholder = 'Auto-filled after lookup';
                     logDebug('Tag not found:', tagName);
                 }
             } catch (error) {
                 tagShareError.textContent = `Error looking up tag: ${error.message}`;
-                tagInfo.style.display = 'none';
                 tagIdInput.value = '';
+                tagIdInput.placeholder = 'Auto-filled after lookup';
                 logDebug('Error looking up tag:', error);
             }
         });
@@ -415,8 +418,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await apiRequest('/share_tag', 'POST', shareTagData);
                 tagShareMessage.textContent = `Tag shared successfully! URL: ${result.share_url} (${result.video_count} videos)`;
                 shareTagForm.reset();
-                tagInfo.style.display = 'none';
                 tagIdInput.value = '';
+                tagIdInput.placeholder = 'Auto-filled after lookup';
                 if(shareIdTypeSelect) shareIdTypeSelect.value = 'random';
                 if(customShareIdInput) customShareIdInput.style.display = 'none';
                 const customShareIdLabel = document.querySelector('label[for="custom-share-id"]');
@@ -467,12 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayName = truncateText(video.video_name, 30);
             const fullName = video.video_name;
 
+            // If the video has a password, append ?pwd=PASSWORD to the copy button's data-url
+            let copyUrl = shareUrl;
+            const shareId = video.share_id;
+            if (video.has_password && sharePasswords[shareId]) {
+                copyUrl += (shareUrl.includes('?') ? '&' : '?') + 'pwd=' + encodeURIComponent(sharePasswords[shareId]);
+            }
+
             row.innerHTML = `
                 <td title="${escapeHTML(fullName)}">${escapeHTML(displayName)}</td>
                 <td>${video.hits}</td>
                 <td>${relativeTime}</td>
                 <td>
-                    <button class="copy-button" data-url="${escapeHTML(shareUrl)}">Copy</button>
+                    <button class="copy-button" data-url="${escapeHTML(copyUrl)}">Copy</button>
                     <button class="edit-button" 
                         data-share-id="${escapeHTML(video.share_id)}" 
                         data-video-name="${escapeHTML(video.video_name.split(' (')[0])}" 
@@ -511,6 +521,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${relativeTime}</td>
                 <td>
                     <button class="copy-button" data-url="${escapeHTML(shareUrl)}">Copy</button>
+                    <button class="edit-tag-button" 
+                        data-share-id="${escapeHTML(tag.share_id)}" 
+                        data-tag-name="${escapeHTML(tag.tag_name)}" 
+                        data-tag-id="${escapeHTML(tag.stash_tag_id)}"
+                        data-days-valid="${calculateDaysRemaining(tag.expires_at)}" 
+                        data-resolution="${escapeHTML(tag.resolution)}" 
+                        data-has-password="${tag.has_password}" 
+                        data-show-in-gallery="${tag.show_in_gallery}">Edit</button>
                     <button class="delete-tag-button" data-share-id="${escapeHTML(tag.share_id)}">Delete</button>
                 </td>
             `;
@@ -568,6 +586,14 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (e) => {
                 const url = e.target.getAttribute('data-url');
                 copyToClipboard(url);
+            });
+        });
+
+        document.querySelectorAll('#shared-tags-table .edit-tag-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                // For now, alert that tag editing is not yet implemented
+                alert('Tag editing functionality coming soon!');
+                // TODO: Implement tag editing modal similar to video editing
             });
         });
 
@@ -648,4 +674,23 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Could not determine base domain:', error);
         }
     }
+
+    // Load site configuration
+    async function loadSiteConfig() {
+        try {
+            const data = await apiRequest('/site_config', 'GET', null, false);
+            if (data && data.site_name) {
+                const siteNameElement = document.getElementById('site-name');
+                if (siteNameElement) {
+                    siteNameElement.textContent = data.site_name;
+                }
+                document.title = `Admin Panel - ${data.site_name}`;
+            }
+        } catch (error) {
+            console.log('Could not load site config:', error);
+        }
+    }
+
+    // Load site config on page load
+    loadSiteConfig();
 });

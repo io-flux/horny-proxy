@@ -6,8 +6,8 @@ html {
 }
 
 body {
-    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
-    color: #f0e6ff;
+    background: linear-gradient(135deg, #050507 0%, #0a050f 100%);
+    color: #c8b3d4;  /* Muted purple-grey instead of bright white */
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
     padding: 0;
@@ -27,14 +27,14 @@ body {
 
 .header {
     padding: 15px 30px;
-    background: rgba(20, 10, 30, 0.9);
-    border-bottom: 1px solid rgba(255, 0, 128, 0.2);
+    background: rgba(10, 5, 15, 0.95);
+    border-bottom: 1px solid rgba(180, 0, 90, 0.2);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     backdrop-filter: blur(10px);
-    box-shadow: 0 2px 20px rgba(255, 0, 128, 0.1);
+    box-shadow: 0 2px 20px rgba(180, 0, 90, 0.1);
 }
 
 .header-left {
@@ -45,11 +45,11 @@ body {
 
 .header img {
     max-height: 80px;
-    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.3));
+    filter: drop-shadow(0 0 10px rgba(180, 0, 90, 0.3));
 }
 
 h1 {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 50%, #c77dff 100%);
+    background: linear-gradient(135deg, #b8006b 0%, #d459a8 50%, #9554cc 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -58,12 +58,24 @@ h1 {
     font-weight: 800;
     margin: 0;
     letter-spacing: 2px;
-    text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+    text-shadow: 0 0 30px rgba(180, 0, 90, 0.5);
 }
 
 .header-controls {
     display: flex;
     gap: 15px;
+}
+
+/* Make logout button same size as refresh button */
+#logout-button,
+#refresh-shares {
+    padding: 12px 24px;
+    font-size: 0.85rem;
+    height: 44px;  /* Fixed height instead of min-height */
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #admin-content {
@@ -85,7 +97,7 @@ h1 {
 .admin-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;  /* Equal height rows */
     gap: 10px;
     height: 100%;
     width: 100%;
@@ -94,19 +106,38 @@ h1 {
 }
 
 .admin-section {
-    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    background: linear-gradient(135deg, rgba(20, 10, 30, 0.8) 0%, rgba(30, 10, 40, 0.6) 100%);
     backdrop-filter: blur(10px);
-    padding: 20px;
+    padding: 15px;
     border-radius: 16px;
-    border: 1px solid rgba(255, 0, 128, 0.2);
+    border: 1px solid rgba(180, 0, 90, 0.2);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
     position: relative;
     transition: all 0.3s ease;
     min-height: 0;  /* Important for flexbox children */
+}
+
+/* Form sections need scrolling only when necessary */
+.admin-section:has(.grid-form) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;  /* Prevent layout shift */
+}
+
+/* Table sections need proper scrolling */
+.admin-section:has(table) {
+    overflow: hidden;  /* Container doesn't scroll */
+}
+
+.admin-section:has(table) > table {
+    display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100% - 40px);  /* Account for h2 heading */
 }
 
 .admin-section::before {
@@ -116,7 +147,7 @@ h1 {
     left: 0;
     right: 0;
     height: 100%;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 0, 128, 0.05) 50%, transparent 70%);
+    background: linear-gradient(45deg, transparent 30%, rgba(180, 0, 90, 0.05) 50%, transparent 70%);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -125,9 +156,9 @@ h1 {
 
 .admin-section:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 35px rgba(255, 0, 128, 0.15), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 0, 128, 0.3);
+    box-shadow: 0 10px 35px rgba(180, 0, 90, 0.15), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-color: rgba(180, 0, 90, 0.3);
 }
 
 .admin-section:hover::before {
@@ -145,27 +176,62 @@ h1 {
 }
 
 .admin-section h2 {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    background: linear-gradient(135deg, #b8006b 0%, #d459a8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-transform: uppercase;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    margin: 0 0 15px 0;  /* Reduced bottom margin */
+    margin: 0 0 10px 0;
     flex-shrink: 0;
     letter-spacing: 1px;
 }
 
+/* Login form specific styling */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-form label {
+    color: #9554cc;
+    font-size: 0.85rem;
+    margin-bottom: -8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login-form input[type="text"],
+.login-form input[type="password"] {
+    background: rgba(5, 2, 10, 0.8);
+    border: 1px solid rgba(149, 84, 204, 0.3);
+    color: #c8b3d4;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    width: 100%;
+    box-sizing: border-box;  /* Fix width overflow */
+}
+
+.login-form button {
+    margin-top: 8px;
+    width: 100%;
+}
+
 .grid-form {
     display: grid;
-    gap: 15px;
+    gap: 10px;
 }
 
 .grid-form label {
-    color: #c77dff;
-    font-size: 0.85rem;
-    margin-bottom: -10px;
+    color: #9554cc;
+    font-size: 0.8rem;
+    margin-bottom: -6px;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -175,57 +241,101 @@ h1 {
 .grid-form input[type="number"],
 .grid-form input[type="password"],
 .grid-form select {
-    background: rgba(10, 5, 20, 0.6);
-    border: 1px solid rgba(199, 125, 255, 0.3);
-    color: #f0e6ff;
-    padding: 12px;
+    background: rgba(5, 2, 10, 0.8);
+    border: 1px solid rgba(149, 84, 204, 0.3);
+    color: #c8b3d4;
+    padding: 10px;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(5px);
+    width: 100%;
+    box-sizing: border-box;  /* Ensure consistent widths */
 }
 
 .grid-form input[type="text"]:focus,
 .grid-form input[type="number"]:focus,
 .grid-form input[type="password"]:focus,
-.grid-form select:focus {
+.grid-form select:focus,
+.login-form input[type="text"]:focus,
+.login-form input[type="password"]:focus {
     outline: none;
-    border-color: #ff0080;
-    box-shadow: 0 0 0 3px rgba(255, 0, 128, 0.2),
-                inset 0 0 20px rgba(255, 0, 128, 0.1);
-    background: rgba(20, 10, 30, 0.8);
+    border-color: #b8006b;
+    box-shadow: 0 0 0 3px rgba(184, 0, 107, 0.2),
+                inset 0 0 20px rgba(184, 0, 107, 0.1);
+    background: rgba(10, 5, 15, 0.9);
 }
 
+/* Custom checkbox styling */
 .grid-form input[type="checkbox"] {
-    width: auto;
-    margin-right: 10px;
-    accent-color: #ff0080;
+    display: none;
 }
 
-/* Fix checkbox label styling in grid forms */
-.grid-form label:has(input[type="checkbox"]) {
-    grid-column: 1 / -1;  /* Span full width */
-    text-align: left;
-    padding-top: 0;
+.checkbox-wrapper {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
-.grid-form label:has(input[type="checkbox"]) input[type="checkbox"] {
-    margin: 0;
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: rgba(149, 84, 204, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(149, 84, 204, 0.5);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: #9554cc;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+input[type="checkbox"]:checked + .toggle-switch {
+    background: rgba(184, 0, 107, 0.3);
+    border-color: rgba(184, 0, 107, 0.5);
+}
+
+input[type="checkbox"]:checked + .toggle-switch::after {
+    transform: translateX(26px);
+    background: #b8006b;
+}
+
+.checkbox-label {
+    color: #c77dff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
 }
 
 .input-group {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
+}
+
+.input-group input {
+    width: 100%;
+}
+
+.input-group button {
+    white-space: nowrap;
 }
 
 button {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #b8006b 0%, #d459a8 100%);
+    color: #ffffff;  /* Pure white for better contrast on buttons */
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -237,7 +347,7 @@ button {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(255, 0, 128, 0.3);
+    box-shadow: 0 2px 10px rgba(184, 0, 107, 0.3);
 }
 
 button::before {
@@ -247,13 +357,13 @@ button::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
     transition: left 0.5s ease;
 }
 
 button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
+    box-shadow: 0 4px 15px rgba(184, 0, 107, 0.4);
 }
 
 button:hover::before {
@@ -264,89 +374,136 @@ button:active {
     transform: translateY(0);
 }
 
-/* Lookup buttons - much darker purple */
+/* Share buttons - full width */
+button[type="submit"] {
+    width: 100%;
+    padding: 10px 16px;
+    margin-top: 5px;
+}
+
+/* Lookup buttons - darker purple */
 #lookup-title-button,
 #lookup-tag-button {
-    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
-    box-shadow: 0 2px 10px rgba(58, 10, 95, 0.3);
+    background: linear-gradient(135deg, #2a0a3f 0%, #3a0a5f 100%);
+    box-shadow: 0 2px 10px rgba(42, 10, 63, 0.3);
+    color: #ffffff;  /* White text on dark purple */
 }
 
 #lookup-title-button:hover,
 #lookup-tag-button:hover {
-    box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+    box-shadow: 0 4px 15px rgba(42, 10, 63, 0.5);
 }
 
 #logout-button {
-    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
-    box-shadow: 0 2px 10px rgba(255, 0, 110, 0.3);
+    background: linear-gradient(135deg, #cc0055 0%, #ff2244 100%);
+    box-shadow: 0 2px 10px rgba(204, 0, 85, 0.3);
+    color: #ffffff;  /* White text */
 }
 
 #logout-button:hover {
-    box-shadow: 0 4px 15px rgba(255, 0, 110, 0.5);
+    box-shadow: 0 4px 15px rgba(204, 0, 85, 0.5);
 }
 
 #refresh-shares {
-    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
-    box-shadow: 0 2px 10px rgba(58, 10, 95, 0.3);
-    color: #fff !important;
+    background: linear-gradient(135deg, #2a0a3f 0%, #3a0a5f 100%);
+    box-shadow: 0 2px 10px rgba(42, 10, 63, 0.3);
+    color: #ffffff !important;  /* White text */
 }
 
 #refresh-shares:hover {
-    box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+    box-shadow: 0 4px 15px rgba(42, 10, 63, 0.5);
 }
 
 .success-message {
-    color: #ff6ec7;
+    color: #d459a8;
     font-size: 0.85rem;
     margin-top: 10px;
-    text-shadow: 0 0 10px rgba(255, 110, 199, 0.5);
-    word-wrap: break-word;  /* Prevent long URLs from causing overflow */
+    text-shadow: 0 0 10px rgba(212, 89, 168, 0.5);
+    word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
 .error-message {
-    color: #ff4458;
+    color: #ff2244;
     font-size: 0.85rem;
     margin-top: 10px;
-    text-shadow: 0 0 10px rgba(255, 68, 88, 0.5);
-    word-wrap: break-word;  /* Prevent long messages from causing overflow */
+    text-shadow: 0 0 10px rgba(255, 34, 68, 0.5);
+    word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    table-layout: fixed;
 }
 
 th {
-    background: rgba(20, 10, 30, 0.8);
-    color: #ff6ec7;
-    padding: 12px;
+    background: rgba(10, 5, 15, 0.9);
+    color: #d459a8;
+    padding: 10px 8px;
     text-align: left;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 1px;
     position: sticky;
     top: 0;
     z-index: 10;
-    border-bottom: 2px solid rgba(255, 0, 128, 0.3);
+    border-bottom: 2px solid rgba(184, 0, 107, 0.3);
+}
+
+/* Column widths */
+th:nth-child(1) { /* Video/Tag Name */
+    width: auto;
+}
+
+th:nth-child(2) { /* Hits */
+    width: 50px;
+    text-align: center;
+}
+
+th:nth-child(3) { /* Expires */
+    width: 70px;
+}
+
+th:nth-child(4) { /* Actions */
+    width: 200px;
+    text-align: center;
 }
 
 td {
-    padding: 12px;
-    border-bottom: 1px solid rgba(199, 125, 255, 0.1);
-    color: #f0e6ff;
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(149, 84, 204, 0.1);
+    color: #c8b3d4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td:nth-child(2) { /* Hits */
+    text-align: center;
+    width: 50px;
+}
+
+td:nth-child(3) { /* Expires */
+    width: 70px;
+}
+
+td:nth-child(4) { /* Actions */
+    text-align: center;
+    white-space: nowrap;
+    width: 200px;
 }
 
 tr {
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;  /* Only transition background, not transform */
 }
 
 tr:hover {
-    background: rgba(255, 0, 128, 0.1);
-    transform: translateX(2px);
+    background: rgba(184, 0, 107, 0.1);
+    /* Removed transform to prevent size changes */
 }
 
 table button {
@@ -356,44 +513,45 @@ table button {
 }
 
 table a {
-    color: #ff6ec7;
+    color: #d459a8;
     text-decoration: none;
     margin-right: 10px;
     transition: all 0.2s ease;
 }
 
 table a:hover {
-    color: #ff0080;
-    text-shadow: 0 0 10px rgba(255, 0, 128, 0.5);
+    color: #b8006b;
+    text-shadow: 0 0 10px rgba(184, 0, 107, 0.5);
 }
 
 .copy-button {
-    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
-    box-shadow: 0 2px 8px rgba(114, 9, 183, 0.3);
+    background: linear-gradient(135deg, #5209a7 0%, #3a0b7d 100%);
+    box-shadow: 0 2px 8px rgba(82, 9, 167, 0.3);
 }
 
-.edit-button {
-    background: linear-gradient(135deg, #b5179e 0%, #f72585 100%);
-    box-shadow: 0 2px 8px rgba(181, 23, 158, 0.3);
+.edit-button, .edit-tag-button {
+    background: linear-gradient(135deg, #8517ae 0%, #b8228f 100%);
+    box-shadow: 0 2px 8px rgba(133, 23, 174, 0.3);
 }
 
 .delete-button, .delete-tag-button {
-    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
-    box-shadow: 0 2px 8px rgba(255, 0, 110, 0.3);
+    background: linear-gradient(135deg, #cc0055 0%, #ff2244 100%);
+    box-shadow: 0 2px 8px rgba(204, 0, 85, 0.3);
 }
 
 #tag-info {
-    background: rgba(10, 5, 20, 0.6);
-    padding: 12px;
+    background: rgba(5, 2, 10, 0.8);
+    padding: 10px;
     border-radius: 8px;
-    margin: -5px 0 10px 0;
-    font-size: 0.85rem;
-    border: 1px solid rgba(199, 125, 255, 0.2);
+    margin: 5px 0;  /* Reduced margin */
+    font-size: 0.8rem;
+    border: 1px solid rgba(149, 84, 204, 0.2);
+    grid-column: 1 / -1;  /* Span full width */
 }
 
 #tag-info p {
     margin: 0;
-    color: #c77dff;
+    color: #9554cc;
 }
 
 /* Modal styles */
@@ -402,20 +560,20 @@ table a:hover {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: linear-gradient(135deg, rgba(40, 20, 60, 0.95) 0%, rgba(60, 20, 80, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(20, 10, 30, 0.98) 0%, rgba(30, 10, 40, 0.98) 100%);
     padding: 30px;
     border-radius: 16px;
-    border: 1px solid rgba(255, 0, 128, 0.3);
+    border: 1px solid rgba(184, 0, 107, 0.3);
     z-index: 1000;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-                0 0 100px rgba(255, 0, 128, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 100px rgba(184, 0, 107, 0.2);
     max-width: 500px;
     width: 90%;
     backdrop-filter: blur(20px);
 }
 
 #edit-modal h3 {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    background: linear-gradient(135deg, #b8006b 0%, #d459a8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -440,250 +598,118 @@ table a:hover {
     justify-content: center;
     height: 100vh;
     width: 100vw;
-    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
-    overflow: hidden;  /* Prevent scrollbars on login */
+    background: linear-gradient(135deg, #050507 0%, #0a050f 100%);
+    overflow: hidden;
 }
 
 #login-section .admin-section {
     max-width: 400px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-                0 0 100px rgba(255, 0, 128, 0.2);
-    overflow: visible;  /* Allow content to size naturally */
-}
-
-#login-section .grid-form {
-    gap: 15px;
-    margin: 0;
-}
-
-#login-section .grid-form input,
-#login-section .grid-form button {
-    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 100px rgba(184, 0, 107, 0.2);
+    overflow: visible;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(10, 5, 20, 0.6);
+    background: rgba(5, 2, 10, 0.8);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
+    background: linear-gradient(135deg, #b8006b 0%, #d459a8 100%);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #ff006e 0%, #ff4458 100%);
+    background: linear-gradient(135deg, #cc0055 0%, #ff2244 100%);
 }
 
-/* Orange accent for special elements */
-.special-action {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
-}
-
-.special-action:hover {
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
+/* Table scrolling */
+.admin-section:has(table) {
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
     .admin-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: repeat(4, minmax(300px, 1fr));
-        overflow-y: auto;
-    }
-    
-    .admin-content-wrapper {
+        grid-template-rows: auto;
         overflow-y: auto;
     }
 }
 
 @media (max-width: 768px) {
     .header {
+        padding: 10px 15px;
         flex-direction: column;
-        gap: 15px;
-        padding: 15px;
+        gap: 10px;
     }
-    
+
     .header-left {
-        width: 100%;
-        justify-content: center;
+        flex-direction: column;
+        text-align: center;
     }
-    
+
     .header h1 {
         font-size: 1rem;
     }
-    
+
     .header-controls {
         width: 100%;
         justify-content: center;
     }
-    
+
     .admin-content-wrapper {
+        padding: 5px;
+    }
+
+    .admin-grid {
+        gap: 5px;
+    }
+
+    .admin-section {
         padding: 10px;
     }
-    
-    .admin-grid {
-        gap: 10px;
-    }
-    
-    .admin-section {
-        padding: 15px;
-    }
 }
 
-/* Override any green colors from styles.css */
-body h1, body h2, body h3,
-.container h1, .container h2, .container h3 {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent;
-}
-
-body a,
-.container a {
-    color: #ff6ec7;
-}
-
-body a:hover,
-.container a:hover {
-    color: #ff0080;
-}
-
-body button,
-.container button {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
-    border: none;
-    color: #fff !important;
-}
-
-body input:focus,
-body select:focus,
-body textarea:focus,
-.container input:focus,
-.container select:focus,
-.container textarea:focus {
-    border-color: #ff0080;
-    outline: none;
-}
-
-/* Special overrides for specific buttons */
-body #refresh-shares,
-.container #refresh-shares {
-    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
-    color: #fff !important;
-}
-
-body #lookup-title-button,
-body #lookup-tag-button,
-.container #lookup-title-button,
-.container #lookup-tag-button {
-    background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
-}
-
-/* Make sure container uses full viewport */
+/* Fix for consistent styling */
 body > .container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    max-width: none !important;
+    background: transparent;
 }
 
-/* Ensure admin content fills available space */
-#admin-content {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    max-width: none !important;
+/* Ensure all sections have proper scrolling */
+.admin-section {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Remove any max-width from styles.css */
-.container,
-.admin-content-wrapper,
-.admin-grid {
-    max-width: none !important;
-}
-
-/* Add a wrapper for scrollable content within sections */
-.admin-section > * {
-    flex-shrink: 0;
-}
-
-/* Make tables scrollable when needed */
 .admin-section table {
-    display: block;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: none;
     flex: 1;
-    min-height: 0;  /* Important for flexbox */
-}
-
-/* Table wrapper for proper scrolling */
-.admin-section:has(table) {
     min-height: 0;  /* Allow shrinking */
 }
 
-/* Only show scrollbar when content actually overflows */
-.admin-section table {
-    scrollbar-gutter: stable;  /* Prevent layout shift */
+.admin-section table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: table-header-group;
 }
 
-.admin-section table:not(:hover)::-webkit-scrollbar {
-    width: 0;  /* Hide scrollbar when not hovering */
-}
-
-.admin-section table:hover::-webkit-scrollbar {
-    width: 8px;
-}
-
-/* Forms should scroll if needed */
-.admin-section .grid-form {
-    overflow: visible;  /* Changed from overflow-y: auto */
-    max-height: none;   /* Remove height constraint */
-    padding-right: 0;   /* Remove scrollbar padding */
-    display: grid;
-    gap: 15px;
-    flex: 1;  /* Fill available space */
-}
-
-/* Fix table layout to prevent unnecessary scrollbars */
-.admin-section table thead,
 .admin-section table tbody {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
+    display: table-row-group;
 }
 
 .admin-section table tr {
     display: table-row;
 }
 
-.admin-section table th,
-.admin-section table td {
-    display: table-cell;
-}
 
-.admin-section table::-webkit-scrollbar-track {
-    background: rgba(10, 5, 20, 0.6);
-    border-radius: 4px;
-}
 
-.admin-section table::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
-    border-radius: 4px;
-}

@@ -3,95 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Gallery</title>
+    <title>{% if tag_name %}{{ tag_name }} - {{ site_name or 'Horny Proxy' }}{% else %}{{ site_name or 'Horny Proxy' }}{% endif %}</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" type="image/x-icon" href="/static/localized/favicon.ico" onerror="this.onerror=null;this.href='/static/favicon.ico';">
+    <style>
+        .pagination {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+        }
+        .pagination a, .pagination span {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0 5px;
+            background: linear-gradient(135deg, #3a0a5f 0%, #4a0a7f 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(58, 10, 95, 0.3);
+        }
+        .pagination a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(58, 10, 95, 0.5);
+        }
+        .pagination .current {
+            background: linear-gradient(135deg, #b8006b 0%, #d459a8 100%);
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(184, 0, 107, 0.3);
+        }
+        .social-links {
+            text-align: center;
+            margin: 40px 0 20px 0;
+            padding: 20px 0;
+            border-top: 1px solid rgba(180, 0, 90, 0.2);
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            opacity: 0.25;
+            transition: opacity 0.3s ease;
+        }
+        .social-links a:hover {
+            opacity: 0.5;
+        }
+        .social-links img {
+            width: 64px;
+            height: 64px;
+            vertical-align: middle;
+            display: inline-block;
+        }
+        .site-motto {
+            text-align: center;
+            margin: 10px 0 30px 0;
+            color: #c8b3d4;
+            font-size: 1.1rem;
+            font-style: italic;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <a href="/" style="display: inline-block;">
+    <div class="container">
+        <header>
             <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo">
-        </a>
-        <h1>Video Gallery</h1>
-    </header>
-
-    <div class="gallery" id="gallery">
-        <!-- Video cards will be inserted here by JavaScript -->
+            {% if site_motto %}
+            <div class="site-motto">{{ site_motto }}</div>
+            {% endif %}
+        </header>
+        
+        {% if tag_name %}
+        <h1>{{ tag_name }} Collection</h1>
+        {% endif %}
+        
+        <div class="gallery" id="gallery">
+            {% for video in video_cards %}
+            <div class="video-card {% if video.is_tag %}tag-collection{% endif %}">
+                {% if video.is_tag %}
+                <span class="tag-badge">Collection</span>
+                {% endif %}
+                <a href="{{ video.share_url }}">
+                    {% if video.lazy_thumbnail_url %}
+                    <img src="/static/default_thumbnail.jpg" 
+                         data-lazy-src="{{ video.lazy_thumbnail_url }}"
+                         alt="{{ video.video_name }}"
+                         class="lazy-load">
+                    {% else %}
+                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
+                    {% endif %}
+                    <div class="title">{{ video.video_name }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if current_page %}
+        <div class="pagination">
+            {% if has_prev_page %}
+            <a href="{{ prev_page_url }}">← Previous</a>
+            {% endif %}
+            <span class="current">Page {{ current_page }}</span>
+            {% if has_next_page %}
+            <a href="{{ next_page_url }}">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div id="loading" style="display: none;">Loading more videos...</div>
+        
+        {% if social_links %}
+        <div class="social-links">
+            {% for link in social_links %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" title="{{ link.name }}">
+                <img src="{% if link.logo.startswith('http') %}{{ link.logo }}{% else %}/{{ link.logo.lstrip('./') }}{% endif %}"
+                     {% if link.logo_2x %}srcset="{% if link.logo_2x.startswith('http') %}{{ link.logo_2x }}{% else %}/{{ link.logo_2x.lstrip('./') }}{% endif %} 2x{% if link.logo_3x %}, {% if link.logo_3x.startswith('http') %}{{ link.logo_3x }}{% else %}/{{ link.logo_3x.lstrip('./') }}{% endif %} 3x{% endif %}"{% endif %}
+                     alt="{{ link.name }}"
+                     width="64" height="64">
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <p class="disclaimer">{{ disclaimer }}</p>
     </div>
-
-    <div id="loading">Loading more videos...</div>
-
+    
     <script>
-        // Video cards data passed from server
-        // Use JSON.parse to handle the data if the templating engine
-        // outputs it as a JSON string literal (e.g., "[...]" instead of [...])
-        const videoCards = JSON.parse('{{ video_cards | tojson | safe }}');
-
-        let currentIndex = 0;
-        const cardsPerPage = 12;
-
-        function loadMoreCards() {
-            const gallery = document.getElementById('gallery');
-            const loading = document.getElementById('loading');
-
-            // Only show loading if there are more cards to load
-            if (currentIndex < videoCards.length) {
-                 loading.style.display = 'block';
-            } else {
-                 loading.style.display = 'none'; // Hide if no more cards
-            }
-
-
-            setTimeout(() => {
-                const nextBatch = videoCards.slice(currentIndex, currentIndex + cardsPerPage);
-                nextBatch.forEach(card => {
-                    const cardElement = document.createElement('div');
-                    cardElement.className = card.is_tag ? 'video-card tag-collection' : 'video-card';
-                    cardElement.innerHTML = `
-                        <a href="${card.share_url}">
-                            ${card.is_tag ? '<span class="tag-badge">Collection</span>' : ''}
-                            <img src="${card.thumbnail_url}" alt="Video thumbnail" onerror="this.src='/static/default_thumbnail.jpg';this.onerror=null;">
-                            <div class="title">${card.video_name}</div>
-                        </a>
-                    `;
-                    gallery.appendChild(cardElement);
+        // Lazy loading for thumbnails
+        document.addEventListener('DOMContentLoaded', function() {
+            const lazyImages = document.querySelectorAll('img.lazy-load');
+            
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            const lazySrc = img.getAttribute('data-lazy-src');
+                            if (lazySrc) {
+                                // Create a new image to preload
+                                const newImg = new Image();
+                                newImg.onload = function() {
+                                    img.src = lazySrc;
+                                    img.classList.remove('lazy-load');
+                                };
+                                newImg.src = lazySrc;
+                                imageObserver.unobserve(img);
+                            }
+                        }
+                    });
+                }, {
+                    rootMargin: '50px 0px',
+                    threshold: 0.01
                 });
-
-                currentIndex += cardsPerPage;
-                loading.style.display = 'none'; // Hide loading after batch is added
-
-                // Check if we need to load more content immediately after adding
-                checkAndLoadMore();
-            }, 100); // Reduced artificial delay for smoother loading
-        }
-
-        function checkAndLoadMore() {
-            // Only check and load if there are still cards not yet displayed
-            if (currentIndex < videoCards.length) {
-                 const scrollPosition = window.innerHeight + window.pageYOffset;
-                 const totalHeight = document.documentElement.scrollHeight;
-
-                 // If user has scrolled to 80% of the page, load more
-                 // Increased threshold slightly for better feel
-                 if (scrollPosition > totalHeight * 0.8) {
-                     loadMoreCards();
-                 }
+                
+                lazyImages.forEach(img => imageObserver.observe(img));
+            } else {
+                // Fallback for browsers that don't support IntersectionObserver
+                lazyImages.forEach(img => {
+                    const lazySrc = img.getAttribute('data-lazy-src');
+                    if (lazySrc) {
+                        img.src = lazySrc;
+                        img.classList.remove('lazy-load');
+                    }
+                });
             }
-             // If all cards are loaded, ensure loading message is hidden
-             if (currentIndex >= videoCards.length) {
-                document.getElementById('loading').style.display = 'none';
-             }
-        }
-
-        // Initial load
-        loadMoreCards();
-
-        // Listen for scroll events
-        window.addEventListener('scroll', checkAndLoadMore);
-        window.addEventListener('resize', checkAndLoadMore); // Also check on resize
+        });
     </script>
-
-<div class="disclaimer">
-    {{ disclaimer }}
-</div>
 </body>
 </html>

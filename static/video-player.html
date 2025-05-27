@@ -3,9 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ video_name }}</title>
+    <title>{{ video_name }} - {{ site_name or 'Horny Proxy' }}</title>
     <link href="/static/styles.css" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
+    <style>
+        /* Override aspect ratio to allow natural video dimensions */
+        .video-js {
+            aspect-ratio: unset !important;
+            max-height: 80vh;
+        }
+        
+        /* Make control bar chunkier */
+        .video-js .vjs-control-bar {
+            height: 50px !important;
+            font-size: 1.1em;
+        }
+        
+        /* Remove rounded corners on control bar */
+        .video-js .vjs-control-bar {
+            border-radius: 0 !important;
+        }
+        
+        /* Style skip buttons */
+        .vjs-skip-backward-15,
+        .vjs-skip-forward-30 {
+            font-family: VideoJS;
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        .vjs-skip-backward-15:before {
+            content: "\f115"; /* replay icon */
+        }
+        
+        .vjs-skip-forward-30:before {
+            content: "\f114"; /* forward icon */
+        }
+        
+        /* Hide playback rate button */
+        .vjs-playback-rate {
+            display: none !important;
+        }
+        
+        /* Move volume to the right */
+        .vjs-volume-panel {
+            order: 8;
+            margin-right: 1em;
+        }
+        
+        .vjs-fullscreen-control {
+            order: 9;
+        }
+        
+        /* Social links styling */
+        .social-links {
+            text-align: center;
+            margin: 40px 0 20px 0;
+            padding: 20px 0;
+            border-top: 1px solid rgba(180, 0, 90, 0.2);
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            opacity: 0.25;
+            transition: opacity 0.3s ease;
+        }
+        .social-links a:hover {
+            opacity: 0.5;
+        }
+        .social-links img {
+            width: 64px;
+            height: 64px;
+            vertical-align: middle;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -13,7 +85,7 @@
             <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo" class="logo">
         </a>
         <div class="video-container">
-            <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" width="800">
+            <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" autoplay muted>
                 <source src="/share/{{ share_id }}/stream.m3u8" type="application/x-mpegURL">
                 Your browser does not support the video tag.
             </video>
@@ -118,16 +190,82 @@
         </div>
         {% endif %}
         
+        {% if social_links %}
+        <div class="social-links">
+            {% for link in social_links %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" title="{{ link.name }}">
+                <img src="{% if link.logo.startswith('http') %}{{ link.logo }}{% else %}/{{ link.logo.lstrip('./') }}{% endif %}"
+                     {% if link.logo_2x %}srcset="{% if link.logo_2x.startswith('http') %}{{ link.logo_2x }}{% else %}/{{ link.logo_2x.lstrip('./') }}{% endif %} 2x{% if link.logo_3x %}, {% if link.logo_3x.startswith('http') %}{{ link.logo_3x }}{% else %}/{{ link.logo_3x.lstrip('./') }}{% endif %} 3x{% endif %}"{% endif %}
+                     alt="{{ link.name }}"
+                     width="64" height="64">
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         <p class="disclaimer">{{ disclaimer }}</p>
     </div>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         var video = document.getElementById('video-player');
-        // This object literal syntax { ... } is Javascript. Jinja2 will ignore it correctly.
+        // Configure video.js with custom controls
         var player = videojs('video-player', {
-            playbackRates: [0.5, 1, 1.5, 2]
+            fluid: true,
+            responsive: true,
+            controlBar: {
+                children: [
+                    'playToggle',
+                    'SkipBackwardButton',
+                    'SkipForwardButton',
+                    'currentTimeDisplay',
+                    'progressControl',
+                    'durationDisplay',
+                    'volumePanel',
+                    'fullscreenToggle'
+                ]
+            }
         });
+        
+        // Add skip buttons
+        var Button = videojs.getComponent('Button');
+        
+        // Skip backward button
+        var SkipBackwardButton = videojs.extend(Button, {
+            constructor: function() {
+                Button.apply(this, arguments);
+                this.addClass('vjs-skip-backward-15');
+                this.controlText('Skip backward 15 seconds');
+                this.el().innerHTML = '<span style="font-size:1.5em;vertical-align:middle;">⏪ 15s</span>';
+            },
+            handleClick: function() {
+                player.currentTime(Math.max(0, player.currentTime() - 15));
+            }
+        });
+        
+        // Skip forward button  
+        var SkipForwardButton = videojs.extend(Button, {
+            constructor: function() {
+                Button.apply(this, arguments);
+                this.addClass('vjs-skip-forward-30');
+                this.controlText('Skip forward 30 seconds');
+                this.el().innerHTML = '<span style="font-size:1.5em;vertical-align:middle;">30s ⏩</span>';
+            },
+            handleClick: function() {
+                player.currentTime(Math.min(player.duration(), player.currentTime() + 30));
+            }
+        });
+        
+        // Register components
+        videojs.registerComponent('SkipBackwardButton', SkipBackwardButton);
+        videojs.registerComponent('SkipForwardButton', SkipForwardButton);
+        
+        // Add buttons to control bar
+        player.ready(() => {
+            player.controlBar.addChild('SkipBackwardButton', {}, 1);
+            player.controlBar.addChild('SkipForwardButton', {}, 2);
+        });
+        
         var src = '/share/{{ share_id }}/stream.m3u8';
         if (Hls.isSupported()) {
             var hls = new Hls();

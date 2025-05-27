@@ -1,3 +1,13 @@
+site_name: "Horny Proxy"  # Optional: defaults to "Horny Proxy" if not set
+site_motto: "Your private video collection"  # Optional: displayed under logo on gallery pages
+social_links:  # Optional: social media links displayed at bottom of pages
+  - name: "GitHub"
+    logo: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+    url: "https://github.com/io-flux/horny-proxy"
+  - name: "Bluesky"
+    logo: "https://bsky.social/favicon.ico"
+    url: "https://bsky.app/profile/example.bsky.social"
+
 horny:
   host: 127.0.0.1
   port: 6669

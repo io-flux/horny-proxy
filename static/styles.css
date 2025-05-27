@@ -12,8 +12,8 @@ body {
     font-size: 14px;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
-    color: #f0e6ff;
+    background: linear-gradient(135deg, #050507 0%, #0a050f 100%);
+    color: #c8b3d4;
     line-height: 1.6;
     min-height: 100vh;
 }
@@ -22,40 +22,34 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 30px;
-    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    background: linear-gradient(135deg, rgba(20, 10, 30, 0.95) 0%, rgba(30, 10, 40, 0.92) 100%);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
     min-height: calc(100vh - 60px);
-    border: 1px solid rgba(255, 0, 128, 0.2);
+    border: 1px solid rgba(180, 0, 90, 0.12);
 }
 
 /* --- Header --- */
 header {
-    background: rgba(20, 10, 30, 0.9);
-    color: #f0e6ff;
+    background: none;
+    color: inherit;
     text-align: center;
-    padding: 20px 0;
-    margin-bottom: 30px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 0, 128, 0.2);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 20px rgba(255, 0, 128, 0.1);
+    padding: 0 0 20px 0;
+    margin-bottom: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
 }
 
 header img {
-    max-height: 160px;
+    max-height: 120px;
     display: block;
     margin-left: auto;
     margin-right: auto;
-    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.3));
+    filter: drop-shadow(0 0 10px rgba(180, 0, 90, 0.2));
     transition: all 0.3s ease;
-}
-
-header a:hover img {
-    transform: translateY(-2px);
-    filter: drop-shadow(0 0 15px rgba(255, 0, 128, 0.5));
 }
 
 /* --- Logo --- */
@@ -99,15 +93,17 @@ h3 {
     font-size: 1rem;
 }
 
+/* --- Disclaimer --- */
 .disclaimer {
-    text-align: center;
-    margin: 30px 0;
-    color: #c77dff;
-    font-size: 0.85rem;
+    text-align: justify;
+    margin: 30px 0 10px 0;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.75rem;
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
-    opacity: 0.8;
+    opacity: 1;
+    line-height: 1.5;
 }
 
 /* --- Forms --- */
@@ -137,7 +133,7 @@ h3 {
     margin: 0;
     border: 1px solid rgba(199, 125, 255, 0.3);
     background: rgba(10, 5, 20, 0.6);
-    color: #f0e6ff;
+    color: #c8b3d4;
     border-radius: 8px;
     font-size: 0.9rem;
     transition: all 0.3s ease;
@@ -211,8 +207,9 @@ button::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent) !important;
     transition: left 0.5s ease;
+    opacity: 0.15 !important;
 }
 
 button:hover {
@@ -316,7 +313,7 @@ th {
 }
 
 td {
-    color: #f0e6ff;
+    color: #c8b3d4;
 }
 
 tr {
@@ -386,13 +383,13 @@ td a:hover {
 }
 
 .video-card {
-    background: linear-gradient(135deg, rgba(40, 20, 60, 0.6) 0%, rgba(60, 20, 80, 0.4) 100%);
+    background: linear-gradient(135deg, rgba(20, 10, 30, 0.98) 0%, rgba(30, 10, 40, 0.96) 100%);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     overflow: hidden;
     transition: all 0.3s ease;
-    border: 1px solid rgba(255, 0, 128, 0.2);
+    border: 1px solid rgba(180, 0, 90, 0.15);
     position: relative;
 }
 
@@ -472,7 +469,7 @@ td a:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #f0e6ff;
+    color: #c8b3d4;
 }
 
 #loading {
@@ -493,44 +490,48 @@ td a:hover {
 }
 
 .video-js {
-    color: #f0e6ff;
+    color: #c8b3d4;
     max-width: 1920px;
     width: 100%;
-    aspect-ratio: 16 / 9;
-    background-color: #000;
+    background-color: #12051a;
     margin: 0 auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.7);
 }
 
 .video-js .vjs-control-bar {
-    background: rgba(20, 10, 30, 0.9);
-    border-top: 1px solid rgba(255, 0, 128, 0.3);
-    height: 60px;
-    border-radius: 0 0 8px 8px;
+    background: rgba(20, 10, 30, 0.98);
+    border-top: 1px solid rgba(180, 0, 90, 0.2);
+    height: 56px;
+    border-radius: 0;
 }
 
 .video-js .vjs-control:not(.vjs-disabled):hover,
 .video-js .vjs-big-play-button:hover {
     color: #ff0080;
-    text-shadow: 0 0 10px rgba(255, 0, 128, 0.7);
+    text-shadow: 0 0 6px rgba(255, 0, 128, 0.3);
 }
 
 .video-js .vjs-big-play-button {
-    background: rgba(20, 10, 30, 0.8);
-    border: 2px solid #ff0080;
+    background: rgba(20, 10, 30, 0.9);
+    border: 2px solid #b8006b;
     border-radius: 50%;
-    width: 2em;
-    height: 2em;
-    line-height: 2em;
-    margin-top: -1em;
-    margin-left: -1em;
+    width: 3.5em;
+    height: 3.5em;
+    line-height: 3.5em;
+    margin-top: -1.75em;
+    margin-left: -1.75em;
     display: flex;
     justify-content: center;
     align-items: center;
+    font-size: 2.2em;
+    box-shadow: 0 2px 10px rgba(180, 0, 90, 0.2);
 }
 
 .video-js .vjs-big-play-button .vjs-icon-placeholder:before {
-    font-size: 1.2em;
+    font-size: 2.2em;
     line-height: inherit;
+    vertical-align: middle;
 }
 
 .video-js .vjs-play-progress,
@@ -555,14 +556,14 @@ td a:hover {
 }
 
 .video-js .vjs-time-control {
-    color: #f0e6ff;
+    color: #c8b3d4;
     font-size: 0.9rem;
 }
 
 .video-js .vjs-time-tooltip,
 .vjs-progress-tooltip {
     background: rgba(20, 10, 30, 0.9);
-    color: #f0e6ff;
+    color: #c8b3d4;
     border-radius: 4px;
     padding: 5px 8px;
     font-size: 0.8rem;
@@ -745,7 +746,7 @@ td a:hover {
 .video-description p {
     margin: 0;
     line-height: 1.8;
-    color: #f0e6ff;
+    color: #c8b3d4;
 }
 
 .metadata-grid {
@@ -868,5 +869,35 @@ td a:hover {
         flex-direction: column;
         gap: 5px;
     }
+}
+
+/* --- Admin Table Sizing --- */
+#shared-videos-table th:nth-child(1),
+#shared-tags-table th:nth-child(1),
+#shared-videos-table td:nth-child(1),
+#shared-tags-table td:nth-child(1) {
+    width: auto;
+    max-width: none;
+    min-width: 120px;
+    white-space: normal;
+    word-break: break-word;
+}
+#shared-videos-table,
+#shared-tags-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* --- Admin Scrollbar Fixes --- */
+.admin-section {
+    overflow-y: hidden !important;
+}
+.admin-section:has(.grid-form) {
+    overflow-y: auto !important;
+    max-height: 100%;
+}
+.admin-section:has(table) > table {
+    overflow-y: auto !important;
+    max-height: 100%;
 }
  
