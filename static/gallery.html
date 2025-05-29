@@ -10,14 +10,16 @@
 <body>
     <div class="container">
         <header>
-            <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo">
+            <a href="{{ base_domain }}">
+                <img src="{{ logo_path }}" srcset="{{ srcset }}" alt="Logo" class="logo">
+            </a>
             {% if site_motto %}
             <div class="site-motto">{{ site_motto }}</div>
             {% endif %}
         </header>
         
         {% if tag_name %}
-        <h1>{{ tag_name }} Collection</h1>
+        <h1>Tag: {{ tag_name }}</h1>
         {% endif %}
         
         <div class="gallery" id="gallery">

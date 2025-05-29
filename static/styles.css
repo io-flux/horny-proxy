@@ -86,17 +86,19 @@ header {
 }
 
 header img {
-    max-height: 120px;
+    min-height: 120px;
+    max-height: 160px;
     display: block;
     margin-left: auto;
     margin-right: auto;
     filter: drop-shadow(0 0 10px rgba(180, 0, 90, 0.2));
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
 }
 
 /* --- Logo --- */
 .logo {
-    max-height: 200px;
+    min-height: 120px;
+    max-height: 160px;
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -118,10 +120,11 @@ h1, h2, h3 {
     background-clip: text;
     font-weight: 700;
     margin-bottom: 20px;
-    text-transform: uppercase;
+    /*text-transform: uppercase;*/
     letter-spacing: 1px;
     margin-top: 10px;
     text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+    text-align: center;
 }
 
 h1 {
@@ -139,15 +142,17 @@ h3 {
 /* --- Disclaimer --- */
 .disclaimer {
     font-family: 'CustomDisclaimer', 'Roboto Mono', monospace;
+    font-weight: 100, 200;
+    font-stretch: condensed, semi-condensed;
     text-align: justify;
-    margin: 30px 0 10px 0;
-    color: rgba(255,255,255,0.5);
-    font-size: 0.75rem;
-    max-width: 800px;
+    margin: 80px 0 20px 0;
+    color: rgba(255,255,255,1);
+    font-size: 0.6rem;
+    max-width: 1000px;
     margin-left: auto;
     margin-right: auto;
-    opacity: 1;
-    line-height: 1.5;
+    opacity: 0.2;
+    line-height: 1.3;
 }
 
 /* --- Forms --- */
@@ -420,10 +425,10 @@ td a:hover {
 /* --- Gallery Styles --- */
 .gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 30px;
     padding: 30px 0;
-    /*max-width: 1400px;*/
+    max-width: 1500px;
     margin: 0 auto;
 }
 
@@ -446,7 +451,7 @@ td a:hover {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: linear-gradient(135deg, #7209b7 0%, #560bad 100%);
+    background: linear-gradient(135deg, #9409b7 0%, #ad0b92 100%);
     color: #fff;
     padding: 5px 12px;
     border-radius: 20px;
@@ -507,14 +512,14 @@ td a:hover {
 }
 
 .video-card .title {
-    padding: 15px;
+    padding: 12px;
     text-align: center;
-    font-size: 0.9rem;
-    font-weight: 400;
+    font-size: 1rem;
+    font-weight: 100, 200, 300 !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #c8b3d4;
+    color: #f2d69a;
 }
 
 #loading {
@@ -658,17 +663,17 @@ td a:hover {
 
 /* --- Scrollbars --- */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 0px;
 }
 
 ::-webkit-scrollbar-track {
     background: rgba(10, 5, 20, 0.6);
-    border-radius: 4px;
+    border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, #ff0080 0%, #ff6ec7 100%);
-    border-radius: 4px;
+    border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -737,16 +742,16 @@ td a:hover {
     }
 
     h1 {
-        font-size: 1.3rem;
+        font-size: 1.8rem;
     }
 
     h2 {
-        font-size: 1.1rem;
+        font-size: 1.5rem;
     }
 
     button {
         padding: 6px 12px;
-        font-size: 0.7rem;
+        font-size: 0.8rem;
     }
 
     .grid-form input, .grid-form select, .grid-form button {
@@ -996,7 +1001,7 @@ td a:hover {
     text-align: center;
     margin: 40px 0 20px 0;
     padding: 20px 0;
-    border-top: 1px solid rgba(180, 0, 90, 0.2);
+    /* border-top: 1px solid rgba(180, 0, 90, 0.2); */
     gap: 24px;
 }
 .social-links a {
@@ -1025,14 +1030,15 @@ td a:hover {
     filter: brightness(0) saturate(100%) invert(47%) sepia(97%) saturate(5159%) hue-rotate(313deg) brightness(103%) contrast(101%);
 }
 
+
 .site-motto {
     font-family: 'CustomMotto', 'AppleGothic', 'Aptos', 'Helvetica Neue', 'Helvetica', 'Arial', 'Segoe UI', 'Roboto Mono', monospace;
     text-align: center;
     margin: 10px 0 30px 0;
     color: #f7b1db;
-    font-size: 1.5rem;
-    font-style: italic;
-    opacity: 0.8;
+    font-size: 1.4rem;
+    /* font-style: italic; */
+    opacity: 1.0;
 }
 
 /* --- Video Player Page Specific --- */

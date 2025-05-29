@@ -679,12 +679,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSiteConfig() {
         try {
             const data = await apiRequest('/site_config', 'GET', null, false);
-            if (data && data.site_name) {
-                const siteNameElement = document.getElementById('site-name');
-                if (siteNameElement) {
-                    siteNameElement.textContent = data.site_name;
+            if (data) {
+                if (data.site_name) {
+                    const siteNameElement = document.getElementById('site-name');
+                    if (siteNameElement) {
+                        siteNameElement.textContent = data.site_name;
+                    }
+                    document.title = `Admin Panel - ${data.site_name}`;
                 }
-                document.title = `Admin Panel - ${data.site_name}`;
+                if (data.base_domain) {
+                    const logoLink = document.getElementById('logo-link');
+                    if (logoLink) {
+                        logoLink.href = data.base_domain;
+                    }
+                }
             }
         } catch (error) {
             console.log('Could not load site config:', error);
@@ -693,4 +701,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load site config on page load
     loadSiteConfig();
+
+    // --- Tab switching logic for 2-pane layout ---
+    function setupTabs(tabBtnIds, tabContentIds) {
+        tabBtnIds.forEach((btnId, idx) => {
+            const btn = document.getElementById(btnId);
+            const content = document.getElementById(tabContentIds[idx]);
+            if (btn && content) {
+                btn.addEventListener('click', () => {
+                    // Deactivate all
+                    tabBtnIds.forEach((otherBtnId, j) => {
+                        const otherBtn = document.getElementById(otherBtnId);
+                        const otherContent = document.getElementById(tabContentIds[j]);
+                        if (otherBtn) otherBtn.classList.remove('active');
+                        if (otherContent) otherContent.style.display = 'none';
+                    });
+                    // Activate this
+                    btn.classList.add('active');
+                    content.style.display = '';
+                });
+            }
+        });
+    }
+    setupTabs(['tab-share-video', 'tab-share-tag'], ['tab-content-share-video', 'tab-content-share-tag']);
+    setupTabs(['tab-list-videos', 'tab-list-tags'], ['tab-content-list-videos', 'tab-content-list-tags']);
 });

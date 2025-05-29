@@ -67,6 +67,9 @@ except Exception as e:
     logger.error(f"Failed to load config.yaml: {e}")
     raise
 
+# Make sure LIMIT_TO_TAG is defined globally after config is loaded
+LIMIT_TO_TAG = config['stash'].get('limit_to_tag', None)
+
 HORNY_HOST = config['horny']['host']
 HORNY_PORT = config['horny']['port']
 BASE_DOMAIN = config['horny']['base_domain']
@@ -328,7 +331,8 @@ async def gallery():
             video_cards=video_cards,
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
-            social_links=SOCIAL_LINKS
+            social_links=SOCIAL_LINKS,
+            base_domain=BASE_DOMAIN
         )
         return HTMLResponse(content=html_content)
     except Exception as e:
@@ -411,7 +415,10 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
         "ApiKey": STASH_API_KEY,
         "Content-Type": "application/json"
     }
-    
+    # Compose tag filter
+    tag_values = [tag_id]
+    if LIMIT_TO_TAG:
+        tag_values = [str(LIMIT_TO_TAG), str(tag_id)]
     query = {
         "operationName": "FindScenes",
         "variables": {
@@ -424,10 +431,10 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
             },
             "scene_filter": {
                 "tags": {
-                    "value": [tag_id],
+                    "value": tag_values,
                     "excludes": [],
                     "modifier": "INCLUDES_ALL",
-                    "depth": -1
+                    "depth": 0 if LIMIT_TO_TAG else -1
                 }
             }
         },
@@ -525,7 +532,12 @@ async def admin_panel():
 # Get site configuration
 @app.get("/site_config")
 async def get_site_config():
-    return {"site_name": SITE_NAME, "site_motto": SITE_MOTTO, "social_links": SOCIAL_LINKS}
+    return {
+        "site_name": SITE_NAME, 
+        "site_motto": SITE_MOTTO, 
+        "social_links": SOCIAL_LINKS,
+        "base_domain": BASE_DOMAIN
+    }
 
 # Login endpoint
 @app.post("/login", response_model=Token)
@@ -720,7 +732,8 @@ async def share_page(share_id: str, password_verified: bool = False, request: Re
                 video_details = video_details,
                 site_name = SITE_NAME,
                 site_motto = SITE_MOTTO,
-                social_links = SOCIAL_LINKS)
+                social_links = SOCIAL_LINKS,
+                base_domain = BASE_DOMAIN)
         return HTMLResponse(html)
 
     finally:
@@ -871,7 +884,8 @@ async def tag_share_page(share_id: str, password_verified: bool = False, request
             total_videos=len(video_cards),
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
-            social_links=SOCIAL_LINKS
+            social_links=SOCIAL_LINKS,
+            base_domain=BASE_DOMAIN
         )
         return HTMLResponse(html)
 
@@ -924,7 +938,8 @@ async def tag_video_page(share_id: str, video_id: int, request: Request = None):
             video_details=video,
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
-            social_links=SOCIAL_LINKS)
+            social_links=SOCIAL_LINKS,
+            base_domain = BASE_DOMAIN)
         return HTMLResponse(html)
 
     finally:
