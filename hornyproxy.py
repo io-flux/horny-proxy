@@ -35,6 +35,10 @@ TEMPLATES = Environment(
 ).get_template               # we'll call TEMPLATES("file.html")
 
 from typing import Optional
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import ssl
 
 # Set up logging (will be reconfigured in main)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -83,6 +87,14 @@ SHARE_ID_LENGTH = config['horny'].get('share_id_length', 8)
 SITE_NAME = config.get('site_name', 'Horny Proxy')  # Add site_name with fallback
 SITE_MOTTO = config.get('site_motto', '')  # Add site_motto with empty default
 SOCIAL_LINKS = config.get('social_links', [])  # Add social_links with empty list default
+
+# SMTP settings for contact form
+CONTACT_FORM_CONFIG = config.get('contact_form', {})
+SMTP_MAILTO = CONTACT_FORM_CONFIG.get('mailto', '')
+SMTP_HOST = CONTACT_FORM_CONFIG.get('host', '')
+SMTP_PORT = CONTACT_FORM_CONFIG.get('port', 465)
+SMTP_USER = CONTACT_FORM_CONFIG.get('user', '')
+SMTP_PASS = CONTACT_FORM_CONFIG.get('pass', '')
 
 # Directory for storing .m3u8 files
 SHARES_DIR = Path("static/shares")
@@ -143,6 +155,13 @@ class SharedTag(Base):
     password_hash = Column(String, nullable=True)
     show_in_gallery = Column(Boolean, default=False)
 
+class TagVideoHit(Base):
+    __tablename__ = "tag_video_hits"
+    id = Column(Integer, primary_key=True, index=True)
+    tag_share_id = Column(String, index=True)  # References SharedTag.share_id
+    video_id = Column(Integer, index=True)      # Stash video ID
+    hits = Column(Integer, default=0)
+
 # Add this Pydantic model (add this after ShareVideoRequest)
 class ShareTagRequest(BaseModel):
     tag_name: str
@@ -167,6 +186,12 @@ class ShareVideoRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class DMCARequest(BaseModel):
+    requester_name: str = Field(..., description="Requester Name or Company")
+    requester_email: str = Field(..., description="Requester Email")
+    requester_website: str = Field("", description="Requester Website")
+    infringing_links: str = Field(..., description="Allegedly Infringing Links")
 
 # JWT authentication
 def create_access_token(data: dict):
@@ -230,6 +255,25 @@ def generate_m3u8_file(share_id: str, stash_video_id: int, resolution: str):
         logger.error(f"Error generating .m3u8 file for share_id={share_id}: {e}")
         return False
 
+# Helper function to get or create tag video hit record
+def get_or_create_tag_video_hit(db, tag_share_id: str, video_id: int):
+    """Get or create a TagVideoHit record for tracking hits on individual videos within tag shares"""
+    hit_record = db.query(TagVideoHit).filter(
+        TagVideoHit.tag_share_id == tag_share_id,
+        TagVideoHit.video_id == video_id
+    ).first()
+    
+    if not hit_record:
+        hit_record = TagVideoHit(
+            tag_share_id=tag_share_id,
+            video_id=video_id,
+            hits=0
+        )
+        db.add(hit_record)
+        db.commit()
+    
+    return hit_record
+
 # Fetch and cache thumbnail from Stash
 def fetch_and_cache_thumbnail(share_id: str, stash_video_id: int):
     thumbnail_url = f"{STASH_SERVER}/scene/{stash_video_id}/screenshot?apikey={STASH_API_KEY}"
@@ -286,7 +330,8 @@ async def gallery():
                 "video_name": video.video_name,
                 "share_url": f"/share/{video.share_id}",
                 "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "is_tag": False
+                "is_tag": False,
+                "hits": video.hits
             })
         
         # Add tag shares
@@ -304,7 +349,8 @@ async def gallery():
                 "video_name": f"Tag: {tag.tag_name}",
                 "share_url": f"/tag/{tag.share_id}",
                 "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "is_tag": True
+                "is_tag": True,
+                "hits": tag.hits
             })
         
         # Determine logo path and srcset (prefer localized, fallback to static)
@@ -733,7 +779,8 @@ async def share_page(share_id: str, password_verified: bool = False, request: Re
                 site_name = SITE_NAME,
                 site_motto = SITE_MOTTO,
                 social_links = SOCIAL_LINKS,
-                base_domain = BASE_DOMAIN)
+                base_domain = BASE_DOMAIN,
+                hit_count = video.hits)
         return HTMLResponse(html)
 
     finally:
@@ -836,6 +883,13 @@ async def tag_share_page(share_id: str, password_verified: bool = False, request
         # Transform videos for gallery display with proxied thumbnails
         video_cards = []
         for i, video in enumerate(videos):
+            # Get hit count for this video
+            hit_record = db.query(TagVideoHit).filter(
+                TagVideoHit.tag_share_id == share_id,
+                TagVideoHit.video_id == int(video["id"])
+            ).first()
+            hits = hit_record.hits if hit_record else 0
+            
             # Skip thumbnail fetching after first 20 videos on a page to speed up initial load
             if i < 20:
                 thumbnail_url = fetch_and_cache_tag_video_thumbnail(share_id, int(video["id"]))
@@ -848,7 +902,8 @@ async def tag_share_page(share_id: str, password_verified: bool = False, request
                 "video_name": video["title"],
                 "share_url": f"/tag/{share_id}/video/{video['id']}",
                 "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "lazy_thumbnail_url": f"/tag/{share_id}/thumbnail/{video['id']}" if not thumbnail_url else None
+                "lazy_thumbnail_url": f"/tag/{share_id}/thumbnail/{video['id']}" if not thumbnail_url else None,
+                "hits": hits
             })
 
         # logo / srcset
@@ -910,6 +965,11 @@ async def tag_video_page(share_id: str, video_id: int, request: Request = None):
         
         if not video:
             raise HTTPException(status_code=404, detail="Video not found in this tag")
+        
+        # Track hits for this video
+        hit_record = get_or_create_tag_video_hit(db, share_id, video_id)
+        hit_record.hits += 1
+        db.commit()
 
         # logo / srcset
         if os.path.exists("static/localized/logo.png"):
@@ -939,7 +999,8 @@ async def tag_video_page(share_id: str, video_id: int, request: Request = None):
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
             social_links=SOCIAL_LINKS,
-            base_domain = BASE_DOMAIN)
+            base_domain = BASE_DOMAIN,
+            hit_count=hit_record.hits)
         return HTMLResponse(html)
 
     finally:
@@ -1479,6 +1540,119 @@ async def proxy_tag_video_segment(share_id: str, video_id: int, segment: str, re
         db.close()
 
 # Get full video details from Stash
+# DMCA takedown form page
+@app.get("/dmca", response_class=HTMLResponse)
+async def dmca_page():
+    """Display the DMCA takedown request form"""
+    try:
+        # logo / srcset
+        if os.path.exists("static/localized/logo.png"):
+            logo_path = "/static/localized/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png")
+                 and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png")
+                 and "/static/localized/logo@3x.png 3x"] if p)
+        else:
+            logo_path = "/static/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png")
+                 and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png")
+                 and "/static/logo@3x.png 3x"] if p)
+        
+        html = TEMPLATES("dmca-form.html").render(
+            logo_path=logo_path,
+            srcset=srcset,
+            disclaimer=DISCLAIMER,
+            site_name=SITE_NAME,
+            site_motto=SITE_MOTTO,
+            social_links=SOCIAL_LINKS,
+            base_domain=BASE_DOMAIN
+        )
+        return HTMLResponse(html)
+    except Exception as e:
+        logger.error(f"Error displaying DMCA form: {e}")
+        raise HTTPException(status_code=500, detail="Failed to display DMCA form")
+
+# DMCA form submission handler
+@app.post("/dmca/submit")
+async def submit_dmca(request: DMCARequest):
+    """Handle DMCA takedown form submission"""
+    try:
+        if not SMTP_MAILTO:
+            logger.error("SMTP configuration missing - no mailto address configured")
+            raise HTTPException(status_code=500, detail="Email configuration error")
+        
+        # Create email message
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_USER
+        msg['To'] = SMTP_MAILTO
+        msg['Subject'] = f"DMCA Takedown Request from {request.requester_name}"
+        
+        # Build email body
+        body = f"""
+DMCA Takedown Request
+
+Requester Name/Company: {request.requester_name}
+Requester Email: {request.requester_email}
+Requester Website: {request.requester_website}
+
+Allegedly Infringing Links:
+{request.infringing_links}
+
+---
+This request was submitted via the {SITE_NAME} DMCA form at {datetime.datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+"""
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        try:
+            context = ssl.create_default_context()
+            if SMTP_PORT == 465:  # SMTPS (SSL from the start)
+                server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context)
+            elif SMTP_PORT == 587:  # STARTTLS
+                server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+                server.ehlo() # Can be omitted
+                server.starttls(context=context)
+                server.ehlo() # Can be omitted
+            else:
+                # Fallback or error for unsupported port configurations for secure email
+                logger.error(f"Unsupported SMTP port configuration for secure email: {SMTP_PORT}. Use 465 for SMTPS or 587 for STARTTLS.")
+                raise HTTPException(status_code=500, detail="SMTP configuration error: Unsupported port for secure email.")
+
+            if SMTP_USER and SMTP_PASS: # Only login if credentials are provided
+                server.login(SMTP_USER, SMTP_PASS)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"DMCA takedown request sent from {request.requester_email}")
+            return {"status": "success", "message": "Your DMCA takedown request has been submitted successfully."}
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP Authentication failed: {e}. Check SMTP_USER and SMTP_PASS.")
+            raise HTTPException(status_code=500, detail="Email server authentication failed.")
+        except smtplib.SMTPConnectError as e:
+            logger.error(f"Failed to connect to SMTP server {SMTP_HOST}:{SMTP_PORT}: {e}")
+            raise HTTPException(status_code=500, detail="Could not connect to email server.")
+        except smtplib.SMTPServerDisconnected as e:
+            logger.error(f"SMTP server disconnected: {e}")
+            raise HTTPException(status_code=500, detail="Email server disconnected unexpectedly.")
+        except ssl.SSLError as e:
+            logger.error(f"SSL Error during SMTP communication: {e}. Check port ({SMTP_PORT}), SSL/TLS settings, and server certificates.")
+            raise HTTPException(status_code=500, detail=f"SSL error with email server: {e}")
+        except Exception as e:
+            logger.error(f"Failed to send DMCA email: {e} (Host: {SMTP_HOST}, Port: {SMTP_PORT}, User: {SMTP_USER})")
+            raise HTTPException(status_code=500, detail="Failed to send email due to an unexpected error.")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing DMCA submission: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process DMCA request")
+
 async def get_video_details(stash_video_id: int) -> dict | None:
     """Get complete video details including performers, tags, studio, and URLs"""
     stash_graphql_url = f"{STASH_SERVER}/graphql"

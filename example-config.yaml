@@ -29,5 +29,14 @@ stash:
   port: 5588
   api_key: yourStashAPIKeyGoesHere
   # limit_to_tag: 10844 # Optional: If set, only include videos that have BOTH the shared tag and this tag (by tag ID)
+
+# SMTP configuration for DMCA takedown requests
+contact_form:
+  mailto: where@takedowns.go  # Email address to receive DMCA requests
+  host: mail.myemailserver.com  # SMTP server hostname
+  port: 465  # SMTP port (typically 465 for SSL/TLS, 587 for STARTTLS)
+  user: me@myemailserver.com  # SMTP username
+  pass: my_SMTP_passw0rd  # SMTP password
+
 disclaimer: "This content is shared for private use only. Unauthorized distribution is prohibited. This site does not encourage/condone illegal sexual conduct and is intended solely to provide visual pleasure for ADULTS only. Please leave this site if you are under 18 or if you find mature/explicit content offensive. All mature/explicit content on this site is strictly in compliance with 18 U.S.C. § Code 2257 i.e. all performers featured are 18 years or older of age. This site and all its associated domains being in accordance with 17 U.S.C. § 512 and the Digital Millennium Copyright Act, responds to infringement notices within 24 hours."
 
