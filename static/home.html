@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if tag_name %}{{ tag_name }} - {{ site_name or 'Horny Proxy' }}{% else %}{{ site_name or 'Horny Proxy' }}{% endif %}</title>
+    <title>{{ site_name or 'Horny Proxy' }}</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" type="image/x-icon" href="/static/localized/favicon.ico" onerror="this.onerror=null;this.href='/static/favicon.ico';">
 </head>
@@ -18,21 +18,70 @@
             {% endif %}
         </header>
         
-        {% if tag_name %}
-        <h1>Tag: {{ tag_name }}</h1>
+        <!-- Tag Collections Section -->
+        {% if tag_cards %}
+        <h2>Collections</h2>
+        <div class="gallery tag-gallery" id="tag-gallery">
+            {% for tag in tag_cards %}
+            <div class="video-card tag-collection">
+                <span class="tag-badge">Collection</span>
+                <a href="{{ tag.share_url }}">
+                    <img src="{{ tag.thumbnail_url }}" alt="Tag: {{ tag.tag_name }}">
+                    <div class="video-count-overlay">
+                        <svg class="video-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 3h20v18H2V3zm2 2v14h16V5H4zm6 3l6 4-6 4V8z" fill="currentColor"/>
+                        </svg>
+                        <span>{{ tag.video_count }}</span>
+                    </div>
+                    <div class="title">{{ tag.tag_name }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Separator -->
+        <div class="section-separator">
+            <div class="separator-line"></div>
+            <span class="separator-text">All Videos</span>
+            <div class="separator-line"></div>
+        </div>
         {% endif %}
         
-        <div class="gallery" id="gallery">
-            {% for video in video_cards %}
+        <!-- All Videos Section -->
+        <div class="gallery videos-gallery" id="videos-gallery">
+            <!-- Individual video shares (always load immediately) -->
+            {% for video in individual_video_cards %}
             <div class="video-card">
                 <a href="{{ video.share_url }}">
-                    {% if video.lazy_thumbnail_url %}
+                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
+                    {% if video.hits > 0 %}
+                    <div class="hit-counter">
+                        <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5C7 5 2.73 8.11 1 12.5C2.73 16.89 7 20 12 20C17 20 21.27 16.89 23 12.5C21.27 8.11 17 5 12 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12.5" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span>{{ video.hits }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="title">{{ video.video_name }}</div>
+                </a>
+            </div>
+            {% endfor %}
+            
+            <!-- Videos from tag shares (with lazy loading) -->
+            {% for video in tag_video_cards %}
+            {% set loop_index = loop.index %}
+            <div class="video-card">
+                <a href="{{ video.share_url }}">
+                    {% if loop_index <= 20 %}
+                    <!-- First 20 videos load immediately -->
+                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
+                    {% else %}
+                    <!-- Remaining videos lazy load -->
                     <img src="/static/default_thumbnail.jpg" 
-                         data-lazy-src="{{ video.lazy_thumbnail_url }}"
+                         data-lazy-src="{{ video.lazy_thumbnail_url or video.thumbnail_url }}"
                          alt="{{ video.video_name }}"
                          class="lazy-load">
-                    {% else %}
-                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
                     {% endif %}
                     {% if video.hits > 0 %}
                     <div class="hit-counter">
@@ -48,20 +97,6 @@
             </div>
             {% endfor %}
         </div>
-        
-        {% if current_page %}
-        <div class="pagination">
-            {% if has_prev_page %}
-            <a href="{{ prev_page_url }}">← Previous</a>
-            {% endif %}
-            <span class="current">Page {{ current_page }}</span>
-            {% if has_next_page %}
-            <a href="{{ next_page_url }}">Next →</a>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <div id="loading" style="display: none;">Loading more videos...</div>
         
         {% if social_links %}
         <div class="social-links">
@@ -125,4 +160,4 @@
         });
     </script>
 </body>
-</html>
+</html> 

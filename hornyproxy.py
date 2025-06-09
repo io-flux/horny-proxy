@@ -24,15 +24,17 @@ from threading import Lock
 import warnings
 from passlib.exc import PasslibSecurityWarning
 import json
-from jinja2 import Template
+from urllib.parse import quote_plus
 # ------------------------------------------------------------------
 # Jinja2 helper (one global Environment – auto-escape HTML)
 # ------------------------------------------------------------------
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-TEMPLATES = Environment(
+JINJA_ENV = Environment(
         loader=FileSystemLoader("static"),
         autoescape=select_autoescape(["html", "xml"])
-).get_template               # we'll call TEMPLATES("file.html")
+)
+JINJA_ENV.filters['urlencode'] = quote_plus
+TEMPLATES = JINJA_ENV.get_template               # we'll call TEMPLATES("file.html")
 
 from typing import Optional
 import smtplib
@@ -293,64 +295,118 @@ def fetch_and_cache_thumbnail(share_id: str, stash_video_id: int):
         logger.error(f"Error fetching thumbnail for share_id={share_id}: {e}")
         return None
 
-# Root endpoint for gallery of active, non-password-protected shares
+# Root endpoint for home page showing all available content
 @app.get("/", response_class=HTMLResponse)
-async def gallery():
+async def home():
     db = SessionLocal()
     try:
         # Get current time for expiration check
         current_time = datetime.datetime.now(timezone.utc)
         
         # Query for active, non-password-protected video shares that are set to show in gallery
-        videos = db.query(SharedVideo).filter(
+        individual_videos = db.query(SharedVideo).filter(
             SharedVideo.expires_at > current_time,
             SharedVideo.password_hash == None,
             SharedVideo.show_in_gallery == True
         ).all()
         
         # Query for active, non-password-protected tag shares that are set to show in gallery
-        tags = db.query(SharedTag).filter(
+        tag_shares = db.query(SharedTag).filter(
             SharedTag.expires_at > current_time,
             SharedTag.password_hash == None,
             SharedTag.show_in_gallery == True
         ).all()
         
-        # Read the gallery template
-        with open("static/gallery.html") as f:
-            html_template = Template(f.read())
+        # Get the home template
+        html_template = TEMPLATES("home.html")
         
-        # Generate video cards for the gallery
-        video_cards = []
+        # Generate tag share cards and collect all videos from these tag shares
+        tag_cards = []
+        all_tag_videos = {}  # Dictionary to store all videos from tag shares {video_id: video_info}
         
-        # Add individual video shares
-        for video in videos:
+        logger.info(f"Found {len(tag_shares)} tag shares marked to show in gallery")
+        
+        for tag in tag_shares:
+            # Get all videos from this tag share
+            tag_videos, total_count = await get_videos_by_tag(tag.stash_tag_id)
+            logger.info(f"Tag '{tag.tag_name}' (ID: {tag.share_id}) has {len(tag_videos)} videos")
+            
+            # Get thumbnail from first video
+            thumbnail_url = None
+            if tag_videos:
+                first_video = tag_videos[0]
+                thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag.share_id, int(first_video["id"]))
+            
+            # Add to tag cards for collections display
+            tag_cards.append({
+                "share_id": tag.share_id,
+                "tag_name": tag.tag_name,
+                "share_url": f"/tag/{tag.share_id}",
+                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                "video_count": total_count,
+                "hits": tag.hits
+            })
+            
+            # Add videos to our master list (for deduplication in "All Videos" section)
+            for video in tag_videos:
+                video_id = int(video["id"])
+                if video_id not in all_tag_videos:
+                    all_tag_videos[video_id] = {
+                        "video": video,
+                        "tag_share_id": tag.share_id,  # Store which tag share this came from for thumbnail
+                        "tag_name": tag.tag_name
+                    }
+        
+        logger.info(f"Collected {len(all_tag_videos)} unique videos from tag shares marked for gallery")
+        
+        # Generate individual video cards
+        individual_video_cards = []
+        for video in individual_videos:
             thumbnail_url = fetch_and_cache_thumbnail(video.share_id, video.stash_video_id)
-            video_cards.append({
+            individual_video_cards.append({
                 "share_id": video.share_id,
                 "video_name": video.video_name,
                 "share_url": f"/share/{video.share_id}",
                 "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "is_tag": False,
-                "hits": video.hits
+                "hits": video.hits,
+                "stash_video_id": video.stash_video_id
             })
         
-        # Add tag shares
-        for tag in tags:
-            # Get the first video from this tag for the thumbnail
-            tag_videos, _ = await get_videos_by_tag(tag.stash_tag_id, per_page=1)
-            if tag_videos:
-                first_video = tag_videos[0]
-                thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag.share_id, int(first_video["id"]))
-            else:
-                thumbnail_url = None
+        # Generate cards for all tag videos (deduplicated)
+        tag_video_cards = []
+        individual_video_ids = {video.stash_video_id for video in individual_videos}
+        
+        for i, (video_id, video_info) in enumerate(all_tag_videos.items()):
+            # Skip if this video is already shared individually
+            if video_id in individual_video_ids:
+                continue
+                
+            video = video_info["video"]
+            tag_share_id = video_info["tag_share_id"]
             
-            video_cards.append({
-                "share_id": tag.share_id,
-                "video_name": f"Tag: {tag.tag_name}",
-                "share_url": f"/tag/{tag.share_id}",
-                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "is_tag": True,
-                "hits": tag.hits
+            # Get hit count for this video in the tag share
+            hit_record = db.query(TagVideoHit).filter(
+                TagVideoHit.tag_share_id == tag_share_id,
+                TagVideoHit.video_id == video_id
+            ).first()
+            hits = hit_record.hits if hit_record else 0
+            
+            # For lazy loading: only fetch thumbnails for first 20 videos
+            if i < 20:
+                thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag_share_id, video_id)
+                lazy_thumbnail_url = None
+            else:
+                thumbnail_url = "/static/default_thumbnail.jpg"
+                lazy_thumbnail_url = f"/tag/{tag_share_id}/thumbnail/{video_id}"
+            
+            tag_video_cards.append({
+                "share_id": f"tag-{tag_share_id}-video-{video_id}",
+                "video_name": video["title"],
+                "share_url": f"/tag/{tag_share_id}/video/{video_id}",
+                "thumbnail_url": thumbnail_url,
+                "lazy_thumbnail_url": lazy_thumbnail_url,
+                "hits": hits,
+                "stash_video_id": video_id
             })
         
         # Determine logo path and srcset (prefer localized, fallback to static)
@@ -369,12 +425,17 @@ async def gallery():
             if os.path.exists("static/logo@3x.png"):
                 srcset += ", /static/logo@3x.png 3x"
         
+        # Log final counts for debugging
+        logger.info(f"Home page rendering: {len(tag_cards)} tag collections, {len(individual_video_cards)} individual videos, {len(tag_video_cards)} tag videos")
+        
         # Render the HTML with video data using jinja2
         html_content = html_template.render(
             logo_path=logo_path,
             srcset=srcset,
             disclaimer=DISCLAIMER,
-            video_cards=video_cards,
+            tag_cards=tag_cards,
+            individual_video_cards=individual_video_cards,
+            tag_video_cards=tag_video_cards,
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
             social_links=SOCIAL_LINKS,
@@ -555,6 +616,22 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
     except Exception as e:
         logger.error(f"Error getting videos for tag {tag_id}: {e}")
         return [], 0
+
+async def get_all_videos_by_tag(tag_id: str) -> list:
+    """Helper to get all videos for a tag, handling pagination."""
+    all_videos = []
+    page = 1
+    per_page = 1000
+    while True:
+        videos, total_count = await get_videos_by_tag(tag_id, page=page, per_page=per_page)
+        if not videos:
+            break
+        all_videos.extend(videos)
+        if len(all_videos) >= total_count or total_count == 0:
+            break
+        page += 1
+    logger.info(f"Fetched {len(all_videos)} total videos for tag_id {tag_id}")
+    return all_videos
 
 async def get_videos_by_tag_name(tag_name: str, page: int = 1, per_page: int = 1000) -> tuple[list, dict | None]:
     """Get videos by tag name - returns (videos, tag_info)"""
@@ -1798,6 +1875,117 @@ async def get_video_details(stash_video_id: int) -> dict | None:
     except Exception as e:
         logger.error(f"Error getting scene details for ID {stash_video_id}: {e}")
         return None
+
+@app.get("/gallery/tag/{tag_name}", response_class=HTMLResponse)
+async def gallery_by_tag(tag_name: str, request: Request = None):
+    db = SessionLocal()
+    try:
+        # 1. Find tag_id from Stash
+        tag_info = await find_tag_by_name(tag_name)
+        if not tag_info:
+            raise HTTPException(status_code=404, detail=f"Tag '{tag_name}' not found")
+        
+        tag_id = tag_info["id"]
+
+        # 2. Find all videos with this tag from Stash
+        target_videos_list = await get_all_videos_by_tag(tag_id)
+        target_video_ids = {int(v['id']) for v in target_videos_list}
+
+        # If no videos have this tag, we can show an empty gallery
+        if not target_video_ids:
+            logger.info(f"No videos found for tag '{tag_name}' in Stash.")
+
+        # 3. Get all active shares from DB
+        current_time = datetime.datetime.now(timezone.utc)
+        individual_shares = db.query(SharedVideo).filter(SharedVideo.expires_at > current_time).all()
+        tag_shares = db.query(SharedTag).filter(SharedTag.expires_at > current_time).all()
+
+        video_cards = []
+        processed_video_ids = set()
+
+        # 4. Process individual shares
+        logger.info(f"Processing {len(individual_shares)} individual shares for tag '{tag_name}' gallery...")
+        for video in individual_shares:
+            if video.stash_video_id in target_video_ids and video.stash_video_id not in processed_video_ids:
+                logger.debug(f"Found match in individual share: video_id={video.stash_video_id}")
+                thumbnail_url = fetch_and_cache_thumbnail(video.share_id, video.stash_video_id)
+                video_cards.append({
+                    "share_url": f"/share/{video.share_id}",
+                    "video_name": video.video_name,
+                    "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                    "hits": video.hits,
+                    "lazy_thumbnail_url": None,
+                })
+                processed_video_ids.add(video.stash_video_id)
+
+        # 5. Process tag shares
+        logger.info(f"Processing {len(tag_shares)} tag shares for tag '{tag_name}' gallery...")
+        for tag_share in tag_shares:
+            # We need all videos from this tag share to check against our target tag
+            shared_videos = await get_all_videos_by_tag(tag_share.stash_tag_id)
+            for video in shared_videos:
+                video_id = int(video['id'])
+                if video_id in target_video_ids and video_id not in processed_video_ids:
+                    logger.debug(f"Found match in tag share '{tag_share.tag_name}': video_id={video_id}")
+                    # Use lazy loading for thumbnails here for performance
+                    thumbnail_url = "/static/default_thumbnail.jpg"
+                    lazy_thumbnail_url = f"/tag/{tag_share.share_id}/thumbnail/{video_id}"
+
+                    hit_record = db.query(TagVideoHit).filter(TagVideoHit.tag_share_id == tag_share.share_id, TagVideoHit.video_id == video_id).first()
+                    hits = hit_record.hits if hit_record else 0
+                    
+                    video_cards.append({
+                        "share_url": f"/tag/{tag_share.share_id}/video/{video_id}",
+                        "video_name": video["title"],
+                        "thumbnail_url": thumbnail_url,
+                        "lazy_thumbnail_url": lazy_thumbnail_url,
+                        "hits": hits,
+                    })
+                    processed_video_ids.add(video_id)
+        
+        # Sort video cards by name
+        video_cards.sort(key=lambda x: x['video_name'])
+        
+        # logo / srcset
+        if os.path.exists("static/localized/logo.png"):
+            logo_path = "/static/localized/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png") and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png") and "/static/localized/logo@3x.png 3x"
+            ] if p)
+        else:
+            logo_path = "/static/logo.png"
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png") and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png") and "/static/logo@3x.png 3x"
+            ] if p)
+
+        logger.info(f"Rendering gallery for tag '{tag_name}' with {len(video_cards)} videos.")
+
+        # Render gallery template
+        html_content = TEMPLATES("gallery.html").render(
+            logo_path=logo_path,
+            srcset=srcset,
+            disclaimer=DISCLAIMER,
+            tag_name=tag_name,
+            video_cards=video_cards,
+            site_name=SITE_NAME,
+            site_motto=SITE_MOTTO,
+            social_links=SOCIAL_LINKS,
+            base_domain=BASE_DOMAIN,
+            current_page=None, # Disabling pagination for this view
+            has_prev_page=False,
+            has_next_page=False,
+        )
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        logger.error(f"Error displaying tag gallery for '{tag_name}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to display tag gallery")
+    finally:
+        db.close()
 
 # Run Uvicorn server
 if __name__ == "__main__":

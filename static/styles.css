@@ -525,6 +525,71 @@ td a:hover {
     font-weight: 600;
 }
 
+/* --- Video Count Overlay (for tag collections) --- */
+.video-count-overlay {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(114, 9, 183, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(114, 9, 183, 0.5);
+    border-radius: 20px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: #fff;
+    z-index: 2;
+}
+
+.video-count-overlay .video-icon {
+    width: 16px;
+    height: 16px;
+    color: #fff;
+}
+
+.video-count-overlay span {
+    font-weight: 600;
+}
+
+/* --- Section Separator --- */
+.section-separator {
+    display: flex;
+    align-items: center;
+    margin: 50px 0 30px 0;
+    gap: 20px;
+}
+
+.separator-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 128, 0.5), transparent);
+}
+
+.separator-text {
+    font-family: 'CustomTitle', 'Roboto Mono', monospace;
+    color: #ff6ec7;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, rgba(20, 10, 30, 0.9) 0%, rgba(30, 10, 40, 0.9) 100%);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 0, 128, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+/* --- Gallery Section Styling --- */
+.tag-gallery {
+    margin-bottom: 20px;
+}
+
+.videos-gallery {
+    margin-top: 20px;
+}
+
 .video-card a {
     text-decoration: none;
     color: inherit;
@@ -1130,8 +1195,9 @@ td a:hover {
 
 .stats-grid {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 20px;
+    justify-content: space-around;
 }
 
 .stat-item {
@@ -1139,6 +1205,7 @@ td a:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    flex: 1;
 }
 
 .stat-icon {
@@ -1149,6 +1216,14 @@ td a:hover {
 
 .stat-icon.eye-icon {
     color: #ff6ec7;
+}
+
+.stat-icon.rating-icon {
+    color: #ffd700;
+}
+
+.stat-icon.date-icon {
+    color: #87ceeb;
 }
 
 .stat-value {
@@ -1195,6 +1270,11 @@ td a:hover {
 @media (max-width: 768px) {
     .description-stats-container {
         grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        flex-direction: column;
+        gap: 15px;
     }
 }
  
