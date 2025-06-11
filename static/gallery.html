@@ -22,6 +22,17 @@
         <h1>Tag: {{ tag_name }}</h1>
         {% endif %}
         
+        <!-- Sort Dropdown -->
+        <div class="sort-container">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select">
+                <option value="title" {% if sort == 'title' %}selected{% endif %}>Title</option>
+                <option value="hits" {% if sort == 'hits' %}selected{% endif %}>Play Count</option>
+                <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Rating</option>
+                <option value="random" {% if sort == 'random' %}selected{% endif %}>Random</option>
+            </select>
+        </div>
+        
         <div class="gallery" id="gallery">
             {% for video in video_cards %}
             <div class="video-card">
@@ -84,8 +95,22 @@
     </div>
     
     <script>
-        // Lazy loading for thumbnails
         document.addEventListener('DOMContentLoaded', function() {
+            // Sorting dropdown logic
+            const sortSelect = document.getElementById('sort-select');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('sort', this.value);
+                    // Reset to page 1 when sort order changes
+                    if (url.searchParams.has('page')) {
+                        url.searchParams.set('page', '1');
+                    }
+                    window.location.href = url.toString();
+                });
+            }
+
+            // Lazy loading for thumbnails
             const lazyImages = document.querySelectorAll('img.lazy-load');
             
             if ('IntersectionObserver' in window) {

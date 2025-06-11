@@ -24,7 +24,8 @@ from threading import Lock
 import warnings
 from passlib.exc import PasslibSecurityWarning
 import json
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, unquote_plus
+import random
 # ------------------------------------------------------------------
 # Jinja2 helper (one global Environment – auto-escape HTML)
 # ------------------------------------------------------------------
@@ -297,7 +298,7 @@ def fetch_and_cache_thumbnail(share_id: str, stash_video_id: int):
 
 # Root endpoint for home page showing all available content
 @app.get("/", response_class=HTMLResponse)
-async def home():
+async def home(request: Request, sort: str = 'title'):
     db = SessionLocal()
     try:
         # Get current time for expiration check
@@ -320,113 +321,126 @@ async def home():
         # Get the home template
         html_template = TEMPLATES("home.html")
         
-        # Generate tag share cards and collect all videos from these tag shares
+        # ---
+        # Data wrangling for combined gallery
+        # ---
+        
+        # 1. Get all videos from gallery-enabled tag shares
+        all_tag_videos = {}  # {video_id: video_info}
         tag_cards = []
-        all_tag_videos = {}  # Dictionary to store all videos from tag shares {video_id: video_info}
-        
-        logger.info(f"Found {len(tag_shares)} tag shares marked to show in gallery")
-        
         for tag in tag_shares:
-            # Get all videos from this tag share
             tag_videos, total_count = await get_videos_by_tag(tag.stash_tag_id)
-            logger.info(f"Tag '{tag.tag_name}' (ID: {tag.share_id}) has {len(tag_videos)} videos")
             
-            # Get thumbnail from first video
-            thumbnail_url = None
+            # Create tag cards for collections display
             if tag_videos:
                 first_video = tag_videos[0]
                 thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag.share_id, int(first_video["id"]))
+                tag_cards.append({
+                    "share_id": tag.share_id,
+                    "tag_name": tag.tag_name,
+                    "share_url": f"/tag/{tag.share_id}",
+                    "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                    "video_count": total_count,
+                    "hits": tag.hits
+                })
             
-            # Add to tag cards for collections display
-            tag_cards.append({
-                "share_id": tag.share_id,
-                "tag_name": tag.tag_name,
-                "share_url": f"/tag/{tag.share_id}",
-                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
-                "video_count": total_count,
-                "hits": tag.hits
-            })
-            
-            # Add videos to our master list (for deduplication in "All Videos" section)
+            # Add videos to master list (deduplicating by video_id)
             for video in tag_videos:
                 video_id = int(video["id"])
                 if video_id not in all_tag_videos:
                     all_tag_videos[video_id] = {
                         "video": video,
-                        "tag_share_id": tag.share_id,  # Store which tag share this came from for thumbnail
-                        "tag_name": tag.tag_name
+                        "tag_share_id": tag.share_id,
+                        "tag_name": tag.tag_name,
+                        "source": "tag"
                     }
         
-        logger.info(f"Collected {len(all_tag_videos)} unique videos from tag shares marked for gallery")
+        # 2. Get ratings for all individual videos in one go
+        individual_video_ids = [v.stash_video_id for v in individual_videos]
+        ratings = await get_ratings_for_videos(individual_video_ids)
         
-        # Generate individual video cards
-        individual_video_cards = []
+        # 3. Create a combined list of all video cards
+        all_video_cards = []
+        
+        # Add individual video shares
         for video in individual_videos:
-            thumbnail_url = fetch_and_cache_thumbnail(video.share_id, video.stash_video_id)
-            individual_video_cards.append({
+            all_video_cards.append({
                 "share_id": video.share_id,
                 "video_name": video.video_name,
                 "share_url": f"/share/{video.share_id}",
-                "thumbnail_url": thumbnail_url if thumbnail_url else "/static/default_thumbnail.jpg",
+                "thumbnail_url": None, # Will be lazy loaded
+                "lazy_thumbnail_url": f"/static/shares/{video.share_id}.jpg",
                 "hits": video.hits,
-                "stash_video_id": video.stash_video_id
+                "stash_video_id": video.stash_video_id,
+                "rating": ratings.get(video.stash_video_id, 0) or 0
             })
         
-        # Generate cards for all tag videos (deduplicated)
-        tag_video_cards = []
-        individual_video_ids = {video.stash_video_id for video in individual_videos}
-        
-        for i, (video_id, video_info) in enumerate(all_tag_videos.items()):
-            # Skip if this video is already shared individually
-            if video_id in individual_video_ids:
-                continue
+        # Add videos from tag shares (avoiding duplicates)
+        individual_video_ids_set = set(individual_video_ids)
+        for video_id, video_info in all_tag_videos.items():
+            if video_id not in individual_video_ids_set:
+                video_data = video_info["video"]
+                tag_share_id = video_info["tag_share_id"]
                 
-            video = video_info["video"]
-            tag_share_id = video_info["tag_share_id"]
-            
-            # Get hit count for this video in the tag share
-            hit_record = db.query(TagVideoHit).filter(
-                TagVideoHit.tag_share_id == tag_share_id,
-                TagVideoHit.video_id == video_id
-            ).first()
-            hits = hit_record.hits if hit_record else 0
-            
-            # For lazy loading: only fetch thumbnails for first 20 videos
-            if i < 20:
-                thumbnail_url = fetch_and_cache_tag_video_thumbnail(tag_share_id, video_id)
-                lazy_thumbnail_url = None
+                hit_record = db.query(TagVideoHit).filter(
+                    TagVideoHit.tag_share_id == tag_share_id,
+                    TagVideoHit.video_id == video_id
+                ).first()
+                
+                all_video_cards.append({
+                    "share_id": f"tag-{tag_share_id}-video-{video_id}",
+                    "video_name": video_data["title"],
+                    "share_url": f"/tag/{tag_share_id}/video/{video_id}",
+                    "thumbnail_url": None, # Will be lazy loaded
+                    "lazy_thumbnail_url": f"/tag/{tag_share_id}/thumbnail/{video_id}",
+                    "hits": hit_record.hits if hit_record else 0,
+                    "stash_video_id": video_id,
+                    "rating": video_data.get("rating", 0) or 0
+                })
+        
+        # 4. Sort the combined list
+        if sort == 'hits':
+            all_video_cards.sort(key=lambda v: v.get('hits', 0), reverse=True)
+        elif sort == 'rating':
+            all_video_cards.sort(key=lambda v: v.get('rating', 0), reverse=True)
+        elif sort == 'random':
+            random.shuffle(all_video_cards)
+        else:  # Default to 'title'
+            all_video_cards.sort(key=lambda v: v['video_name'])
+        
+        # Pre-fetch thumbnails for the first batch of sorted videos
+        for i, card in enumerate(all_video_cards):
+            if i < 24: # Number of thumbnails to preload
+                if card['share_url'].startswith('/share/'):
+                    card['thumbnail_url'] = fetch_and_cache_thumbnail(card['share_id'], card['stash_video_id'])
+                else: # Tag video
+                    parts = card['share_id'].split('-video-')
+                    tag_share_id = parts[0][4:]
+                    video_id = int(parts[1])
+                    card['thumbnail_url'] = fetch_and_cache_tag_video_thumbnail(tag_share_id, video_id)
             else:
-                thumbnail_url = "/static/default_thumbnail.jpg"
-                lazy_thumbnail_url = f"/tag/{tag_share_id}/thumbnail/{video_id}"
-            
-            tag_video_cards.append({
-                "share_id": f"tag-{tag_share_id}-video-{video_id}",
-                "video_name": video["title"],
-                "share_url": f"/tag/{tag_share_id}/video/{video_id}",
-                "thumbnail_url": thumbnail_url,
-                "lazy_thumbnail_url": lazy_thumbnail_url,
-                "hits": hits,
-                "stash_video_id": video_id
-            })
+                break
         
         # Determine logo path and srcset (prefer localized, fallback to static)
         if os.path.exists("static/localized/logo.png"):
             logo_path = "/static/localized/logo.png"
-            srcset = "/static/localized/logo.png 1x"
-            if os.path.exists("static/localized/logo@2x.png"):
-                srcset += ", /static/localized/logo@2x.png 2x"
-            if os.path.exists("static/localized/logo@3x.png"):
-                srcset += ", /static/localized/logo@3x.png 3x"
+            srcset = ", ".join(p for p in [
+                "/static/localized/logo.png 1x",
+                os.path.exists("static/localized/logo@2x.png")
+                 and "/static/localized/logo@2x.png 2x",
+                os.path.exists("static/localized/logo@3x.png")
+                 and "/static/localized/logo@3x.png 3x"] if p)
         else:
             logo_path = "/static/logo.png"
-            srcset = "/static/logo.png 1x"
-            if os.path.exists("static/logo@2x.png"):
-                srcset += ", /static/logo@2x.png 2x"
-            if os.path.exists("static/logo@3x.png"):
-                srcset += ", /static/logo@3x.png 3x"
+            srcset = ", ".join(p for p in [
+                "/static/logo.png 1x",
+                os.path.exists("static/logo@2x.png")
+                 and "/static/logo@2x.png 2x",
+                os.path.exists("static/logo@3x.png")
+                 and "/static/logo@3x.png 3x"] if p)
         
         # Log final counts for debugging
-        logger.info(f"Home page rendering: {len(tag_cards)} tag collections, {len(individual_video_cards)} individual videos, {len(tag_video_cards)} tag videos")
+        logger.info(f"Home page rendering: {len(tag_cards)} tag collections, {len(all_video_cards)} total videos")
         
         # Render the HTML with video data using jinja2
         html_content = html_template.render(
@@ -434,19 +448,57 @@ async def home():
             srcset=srcset,
             disclaimer=DISCLAIMER,
             tag_cards=tag_cards,
-            individual_video_cards=individual_video_cards,
-            tag_video_cards=tag_video_cards,
+            all_video_cards=all_video_cards, # Use the new combined and sorted list
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
             social_links=SOCIAL_LINKS,
-            base_domain=BASE_DOMAIN
+            base_domain=BASE_DOMAIN,
+            sort=sort
         )
         return HTMLResponse(content=html_content)
     except Exception as e:
-        logger.error(f"Error displaying gallery: {e}")
+        logger.error(f"Error displaying gallery: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to display gallery")
     finally:
         db.close()
+
+async def get_ratings_for_videos(video_ids: list[int]) -> dict[int, int]:
+    """Get ratings for a list of video IDs from Stash."""
+    if not video_ids:
+        return {}
+
+    stash_graphql_url = f"{STASH_SERVER}/graphql"
+    headers = {"ApiKey": STASH_API_KEY, "Content-Type": "application/json"}
+    
+    query = {
+        "operationName": "FindScenes",
+        "variables": {"scene_ids": video_ids},
+        "query": """
+            query FindScenes($scene_ids: [Int!]) {
+                findScenes(scene_ids: $scene_ids) {
+                    scenes {
+                        id
+                        rating100
+                    }
+                }
+            }
+        """
+    }
+
+    try:
+        response = requests.post(stash_graphql_url, json=query, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("errors"):
+            logger.error(f"GraphQL error getting ratings: {data['errors']}")
+            return {}
+
+        scenes = data.get("data", {}).get("findScenes", {}).get("scenes", [])
+        return {int(scene["id"]): scene.get("rating100") for scene in scenes if scene.get("rating100") is not None}
+    except Exception as e:
+        logger.error(f"Error fetching ratings for videos: {e}")
+        return {}
 
 async def find_tag_by_name(tag_name: str) -> dict | None:
     """Find a tag by name and return its ID and details"""
@@ -515,7 +567,7 @@ async def find_tag_by_name(tag_name: str) -> dict | None:
         logger.error(f"Error finding tag '{tag_name}': {e}")
         return None
 
-async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) -> tuple[list, int]:
+async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000, sort_by: str = 'date') -> tuple[list, int]:
     """Get videos that have a specific tag - returns (videos, total_count)"""
     stash_graphql_url = f"{STASH_SERVER}/graphql"
     headers = {
@@ -533,7 +585,7 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
                 "q": "",
                 "page": page,
                 "per_page": per_page,
-                "sort": "date",
+                "sort": sort_by,
                 "direction": "DESC"
             },
             "scene_filter": {
@@ -553,6 +605,7 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
                         id
                         title
                         details
+                        rating100
                         paths {
                             screenshot
                             preview
@@ -602,6 +655,7 @@ async def get_videos_by_tag(tag_id: str, page: int = 1, per_page: int = 1000) ->
                 "id": scene["id"],
                 "title": scene["title"],
                 "details": scene.get("details", ""),
+                "rating": scene.get("rating100"),
                 "screenshot": scene["paths"]["screenshot"],
                 "preview": scene["paths"]["preview"],
                 "tags": [{"id": tag["id"], "name": tag["name"]} for tag in scene.get("tags", [])],
@@ -909,7 +963,7 @@ def fetch_and_cache_tag_video_thumbnail(tag_share_id: str, video_id: int):
 
 # Tag share page endpoint
 @app.get("/tag/{share_id}", response_class=HTMLResponse, response_model=None)
-async def tag_share_page(share_id: str, password_verified: bool = False, request: Request = None, page: int = 1):
+async def tag_share_page(share_id: str, password_verified: bool = False, request: Request = None, page: int = 1, sort: str = 'title'):
     db = SessionLocal()
     try:
         tag_share = db.query(SharedTag).filter_by(share_id=share_id).first()
@@ -951,7 +1005,40 @@ async def tag_share_page(share_id: str, password_verified: bool = False, request
             page = 1
 
         # Get videos for this tag with pagination
-        videos, total_count = await get_videos_by_tag(tag_share.stash_tag_id, page=page, per_page=per_page)
+        videos = []
+        total_count = 0
+
+        if sort == 'hits':
+            # For hits, we need all videos, sort, then paginate manually
+            all_videos_raw, _ = await get_all_videos_by_tag(tag_share.stash_tag_id)
+            
+            # Decorate with hit counts
+            decorated_videos = []
+            for video_raw in all_videos_raw:
+                hit_record = db.query(TagVideoHit).filter(
+                    TagVideoHit.tag_share_id == share_id,
+                    TagVideoHit.video_id == int(video_raw["id"])
+                ).first()
+                video_raw['hits'] = hit_record.hits if hit_record else 0
+                decorated_videos.append(video_raw)
+
+            decorated_videos.sort(key=lambda v: v['hits'], reverse=True)
+            
+            total_count = len(decorated_videos)
+            start = (page - 1) * per_page
+            end = start + per_page
+            videos = decorated_videos[start:end]
+        
+        elif sort == 'random':
+            # Let Stash handle random sort, but we need to adjust total_count for pagination
+            _, total_count = await get_videos_by_tag(tag_share.stash_tag_id, per_page=1) # get total count
+            videos, _ = await get_videos_by_tag(tag_share.stash_tag_id, page=page, per_page=per_page, sort_by='random')
+            
+        else: # title, rating, date
+            sort_map = {'title': 'title', 'rating': 'rating'}
+            stash_sort = sort_map.get(sort, 'date')
+            videos, total_count = await get_videos_by_tag(tag_share.stash_tag_id, page=page, per_page=per_page, sort_by=stash_sort)
+
         
         # Calculate pagination info
         total_pages = (total_count + per_page - 1) // per_page  # Ceiling division
@@ -1010,14 +1097,15 @@ async def tag_share_page(share_id: str, password_verified: bool = False, request
             current_page=page,
             has_prev_page=page > 1,
             has_next_page=has_more_pages,
-            prev_page_url=f"/tag/{share_id}?page={page-1}" if page > 1 else None,
-            next_page_url=f"/tag/{share_id}?page={page+1}" if has_more_pages else None,
+            prev_page_url=f"/tag/{share_id}?page={page-1}&sort={sort}" if page > 1 else None,
+            next_page_url=f"/tag/{share_id}?page={page+1}&sort={sort}" if has_more_pages else None,
             tag_name=tag_share.tag_name,
             total_videos=len(video_cards),
             site_name=SITE_NAME,
             site_motto=SITE_MOTTO,
             social_links=SOCIAL_LINKS,
-            base_domain=BASE_DOMAIN
+            base_domain=BASE_DOMAIN,
+            sort=sort
         )
         return HTMLResponse(html)
 
@@ -1350,6 +1438,7 @@ async def shared_videos(current_user: str = Depends(get_current_user)):
 @app.get("/lookup_tag/{tag_name}")
 async def lookup_tag(tag_name: str, current_user: str = Depends(get_current_user)):
     """Lookup a tag and return info about it"""
+    tag_name = unquote_plus(tag_name)
     try:
         videos, tag_info = await get_videos_by_tag_name(tag_name)
         
@@ -1878,6 +1967,7 @@ async def get_video_details(stash_video_id: int) -> dict | None:
 
 @app.get("/gallery/tag/{tag_name}", response_class=HTMLResponse)
 async def gallery_by_tag(tag_name: str, request: Request = None):
+    tag_name = unquote_plus(tag_name)
     db = SessionLocal()
     try:
         # 1. Find tag_id from Stash

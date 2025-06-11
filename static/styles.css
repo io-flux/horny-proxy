@@ -1277,4 +1277,31 @@ td a:hover {
         gap: 15px;
     }
 }
+
+.sort-container {
+    margin-bottom: 20px;
+    text-align: right;
+}
+
+.sort-container label {
+    margin-right: 10px;
+    font-weight: bold;
+    color: #ccc;
+}
+
+.sort-container select {
+    padding: 8px 12px;
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+    color: #eee;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.sort-container select:focus {
+    outline: none;
+    border-color: #555;
+    box-shadow: 0 0 5px rgba(85, 85, 85, 0.5);
+}
  

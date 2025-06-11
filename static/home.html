@@ -47,42 +47,27 @@
         </div>
         {% endif %}
         
+        <!-- Sort Dropdown -->
+        <div class="sort-container">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select">
+                <option value="title" {% if sort == 'title' %}selected{% endif %}>Title</option>
+                <option value="hits" {% if sort == 'hits' %}selected{% endif %}>Play Count</option>
+                <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Rating</option>
+                <option value="random" {% if sort == 'random' %}selected{% endif %}>Random</option>
+            </select>
+        </div>
+        
         <!-- All Videos Section -->
         <div class="gallery videos-gallery" id="videos-gallery">
-            <!-- Individual video shares (always load immediately) -->
-            {% for video in individual_video_cards %}
+            <!-- Videos (now a single combined list) -->
+            {% for video in all_video_cards %}
             <div class="video-card">
                 <a href="{{ video.share_url }}">
-                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
-                    {% if video.hits > 0 %}
-                    <div class="hit-counter">
-                        <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 5C7 5 2.73 8.11 1 12.5C2.73 16.89 7 20 12 20C17 20 21.27 16.89 23 12.5C21.27 8.11 17 5 12 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="12" cy="12.5" r="3" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <span>{{ video.hits }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="title">{{ video.video_name }}</div>
-                </a>
-            </div>
-            {% endfor %}
-            
-            <!-- Videos from tag shares (with lazy loading) -->
-            {% for video in tag_video_cards %}
-            {% set loop_index = loop.index %}
-            <div class="video-card">
-                <a href="{{ video.share_url }}">
-                    {% if loop_index <= 20 %}
-                    <!-- First 20 videos load immediately -->
-                    <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
-                    {% else %}
-                    <!-- Remaining videos lazy load -->
-                    <img src="/static/default_thumbnail.jpg" 
-                         data-lazy-src="{{ video.lazy_thumbnail_url or video.thumbnail_url }}"
+                    <img src="{{ video.thumbnail_url or '/static/default_thumbnail.jpg' }}" 
+                         data-lazy-src="{{ video.lazy_thumbnail_url }}"
                          alt="{{ video.video_name }}"
                          class="lazy-load">
-                    {% endif %}
                     {% if video.hits > 0 %}
                     <div class="hit-counter">
                         <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -119,8 +104,18 @@
     </div>
     
     <script>
-        // Lazy loading for thumbnails
         document.addEventListener('DOMContentLoaded', function() {
+            // Sorting dropdown logic
+            const sortSelect = document.getElementById('sort-select');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('sort', this.value);
+                    window.location.href = url.toString();
+                });
+            }
+
+            // Lazy loading for thumbnails
             const lazyImages = document.querySelectorAll('img.lazy-load');
             
             if ('IntersectionObserver' in window) {
@@ -129,7 +124,7 @@
                         if (entry.isIntersecting) {
                             const img = entry.target;
                             const lazySrc = img.getAttribute('data-lazy-src');
-                            if (lazySrc) {
+                            if (lazySrc && img.src !== lazySrc) {
                                 // Create a new image to preload
                                 const newImg = new Image();
                                 newImg.onload = function() {
