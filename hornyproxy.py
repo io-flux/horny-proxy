@@ -1195,8 +1195,8 @@ async def get_tag_video_thumbnail(share_id: str, video_id: int):
     finally:
         db.close()
 
-# Updated serve_m3u8_file to handle both regular and tag video shares
-@app.get("/share/{share_id}/stream.mp4")
+# Add HLS endpoint for full video streaming on the site
+@app.get("/share/{share_id}/stream.m3u8")
 async def serve_m3u8_file(share_id: str):
     db = SessionLocal()
     try:
@@ -1262,6 +1262,90 @@ async def serve_m3u8_file(share_id: str):
     except Exception as e:
         logger.error(f"Error serving .m3u8 file: {e}")
         raise HTTPException(status_code=500, detail="Failed to serve .m3u8 file")
+    finally:
+        db.close()
+
+# Serve MP4 preview file instead of HLS stream for better compatibility with social platforms
+@app.get("/share/{share_id}/stream.mp4")
+async def serve_mp4_preview(share_id: str):
+    db = SessionLocal()
+    try:
+        # Check if it's a regular video share
+        video = db.query(SharedVideo).filter(SharedVideo.share_id == share_id).first()
+        if video:
+            expires_at_aware = video.expires_at.replace(tzinfo=timezone.utc)
+            if expires_at_aware < datetime.datetime.now(timezone.utc):
+                raise HTTPException(status_code=403, detail="Share link has expired")
+            
+            # Stream the preview from Stash
+            preview_url = f"{STASH_SERVER}/scene/{video.stash_video_id}/preview?apikey={STASH_API_KEY}"
+            response = requests.get(preview_url, stream=True)
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch preview from Stash: status={response.status_code}")
+                raise HTTPException(status_code=500, detail="Failed to fetch preview")
+            
+            def stream_content():
+                for chunk in response.iter_content(chunk_size=1024*1024):
+                    if chunk:
+                        yield chunk
+            
+            return StreamingResponse(
+                stream_content(),
+                media_type="video/mp4",
+                headers={
+                    "Accept-Ranges": "bytes",
+                    "Cache-Control": "public, max-age=3600",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+        
+        # Check if it's a tag video share (format: tag-{tag_share_id}-video-{video_id})
+        if share_id.startswith("tag-") and "-video-" in share_id:
+            parts = share_id.split("-video-")
+            if len(parts) == 2:
+                tag_share_id = parts[0][4:]  # Remove "tag-" prefix
+                video_id = int(parts[1])
+                
+                tag_share = db.query(SharedTag).filter(SharedTag.share_id == tag_share_id).first()
+                if tag_share:
+                    expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+                    if expires_at_aware < datetime.datetime.now(timezone.utc):
+                        raise HTTPException(status_code=403, detail="Tag share has expired")
+                    
+                    # Verify video belongs to this tag
+                    videos, _ = await get_videos_by_tag(tag_share.stash_tag_id)
+                    video_exists = any(int(v["id"]) == video_id for v in videos)
+                    if not video_exists:
+                        raise HTTPException(status_code=404, detail="Video not found in this tag")
+                    
+                    # Stream the preview from Stash
+                    preview_url = f"{STASH_SERVER}/scene/{video_id}/preview?apikey={STASH_API_KEY}"
+                    response = requests.get(preview_url, stream=True)
+                    
+                    if response.status_code != 200:
+                        logger.error(f"Failed to fetch preview from Stash: status={response.status_code}")
+                        raise HTTPException(status_code=500, detail="Failed to fetch preview")
+                    
+                    def stream_content():
+                        for chunk in response.iter_content(chunk_size=1024*1024):
+                            if chunk:
+                                yield chunk
+                    
+                    return StreamingResponse(
+                        stream_content(),
+                        media_type="video/mp4",
+                        headers={
+                            "Accept-Ranges": "bytes",
+                            "Cache-Control": "public, max-age=3600",
+                            "Access-Control-Allow-Origin": "*"
+                        }
+                    )
+        
+        raise HTTPException(status_code=404, detail="Share link not found")
+    except Exception as e:
+        logger.error(f"Error serving MP4 preview: {e}")
+        raise HTTPException(status_code=500, detail="Failed to serve MP4 preview")
     finally:
         db.close()
 
@@ -1692,8 +1776,8 @@ async def edit_tag_share(share_id: str, request: ShareTagRequest, current_user: 
         db.close()
 
 
-# M3U8 endpoint for individual videos in tag shares
-@app.get("/tag/{share_id}/video/{video_id}/stream.mp4")
+# HLS endpoint for individual videos in tag shares
+@app.get("/tag/{share_id}/video/{video_id}/stream.m3u8")
 async def serve_tag_video_m3u8(share_id: str, video_id: int):
     db = SessionLocal()
     try:
@@ -1730,6 +1814,53 @@ async def serve_tag_video_m3u8(share_id: str, video_id: int):
     except Exception as e:
         logger.error(f"Error serving tag video .m3u8 file: {e}")
         raise HTTPException(status_code=500, detail="Failed to serve .m3u8 file")
+    finally:
+        db.close()
+
+# MP4 preview endpoint for individual videos in tag shares
+@app.get("/tag/{share_id}/video/{video_id}/stream.mp4")
+async def serve_tag_video_mp4(share_id: str, video_id: int):
+    db = SessionLocal()
+    try:
+        tag_share = db.query(SharedTag).filter(SharedTag.share_id == share_id).first()
+        if not tag_share:
+            raise HTTPException(status_code=404, detail="Tag share not found")
+        
+        expires_at_aware = tag_share.expires_at.replace(tzinfo=timezone.utc)
+        if expires_at_aware < datetime.datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="Tag share has expired")
+        
+        # Check if this video actually belongs to this tag
+        videos, _ = await get_videos_by_tag(tag_share.stash_tag_id)
+        video_exists = any(int(v["id"]) == video_id for v in videos)
+        if not video_exists:
+            raise HTTPException(status_code=404, detail="Video not found in this tag")
+        
+        # Stream the preview from Stash
+        preview_url = f"{STASH_SERVER}/scene/{video_id}/preview?apikey={STASH_API_KEY}"
+        response = requests.get(preview_url, stream=True)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to fetch preview from Stash: status={response.status_code}")
+            raise HTTPException(status_code=500, detail="Failed to fetch preview")
+        
+        def stream_content():
+            for chunk in response.iter_content(chunk_size=1024*1024):
+                if chunk:
+                    yield chunk
+        
+        return StreamingResponse(
+            stream_content(),
+            media_type="video/mp4",
+            headers={
+                "Accept-Ranges": "bytes",
+                "Cache-Control": "public, max-age=3600",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error serving tag video MP4 preview: {e}")
+        raise HTTPException(status_code=500, detail="Failed to serve MP4 preview")
     finally:
         db.close()
 
