@@ -35,7 +35,7 @@
         
         <div class="gallery" id="gallery">
             {% for video in video_cards %}
-            <div class="video-card">
+            <div class="video-card" data-preview-url="{{ video.share_url }}/preview">
                 <a href="{{ video.share_url }}">
                     {% if video.lazy_thumbnail_url %}
                     <img src="/static/default_thumbnail.jpg" 
@@ -45,6 +45,7 @@
                     {% else %}
                     <img src="{{ video.thumbnail_url }}" alt="{{ video.video_name }}">
                     {% endif %}
+                    <video class="preview-video" disableremoteplayback playsinline muted loop preload="none"></video>
                     {% if video.hits > 0 %}
                     <div class="hit-counter">
                         <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -109,6 +110,56 @@
                     window.location.href = url.toString();
                 });
             }
+
+            // Video preview on hover
+            const videoCards = document.querySelectorAll('.video-card');
+            let hoverTimeout;
+            
+            videoCards.forEach(card => {
+                const video = card.querySelector('.preview-video');
+                const img = card.querySelector('img');
+                let isLoading = false;
+                let hasLoaded = false;
+                
+                card.addEventListener('mouseenter', function() {
+                    clearTimeout(hoverTimeout);
+                    hoverTimeout = setTimeout(() => {
+                        if (!isLoading && !video.src) {
+                            isLoading = true;
+                            const previewUrl = card.getAttribute('data-preview-url');
+                            video.src = previewUrl;
+                            
+                            video.addEventListener('loadeddata', function onLoad() {
+                                video.removeEventListener('loadeddata', onLoad);
+                                isLoading = false;
+                                hasLoaded = true;
+                                if (card.matches(':hover')) {
+                                    img.style.opacity = '0';
+                                    video.style.display = 'block';
+                                    video.play().catch(e => console.log('Preview play failed:', e));
+                                }
+                            });
+                            
+                            video.addEventListener('error', function onError() {
+                                video.removeEventListener('error', onError);
+                                console.error('Failed to load preview:', previewUrl);
+                                isLoading = false;
+                            });
+                        } else if (hasLoaded && video.src) {
+                            img.style.opacity = '0';
+                            video.style.display = 'block';
+                            video.play().catch(e => console.log('Preview play failed:', e));
+                        }
+                    }, 500); // 500ms delay before loading preview
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    clearTimeout(hoverTimeout);
+                    video.pause();
+                    video.style.display = 'none';
+                    img.style.opacity = '1';
+                });
+            });
 
             // Lazy loading for thumbnails
             const lazyImages = document.querySelectorAll('img.lazy-load');

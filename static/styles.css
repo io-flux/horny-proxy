@@ -602,8 +602,8 @@ td a:hover {
     object-fit: cover;
     background-color: #0a0a0f;
     display: block;
+    transition: opacity 0.3s ease;
 }
-
 
 .video-card .title {
     padding: 6px;
@@ -1303,5 +1303,26 @@ td a:hover {
     outline: none;
     border-color: #555;
     box-shadow: 0 0 5px rgba(85, 85, 85, 0.5);
+}
+
+.video-card {
+    position: relative;
+}
+
+.video-card img {
+    transition: opacity 0.3s ease;
+}
+
+.preview-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    border-radius: 8px;
+    z-index: 1;
+    pointer-events: none;
 }
  

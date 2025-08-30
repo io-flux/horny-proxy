@@ -18,7 +18,7 @@
         {% endif %}
         <div class="video-container">
             <video id="video-player" class="video-js vjs-default-skin" controls preload="auto" autoplay muted poster="/static/default_thumbnail.jpg">
-                <source src="/share/{{ share_id }}/stream.m3u8" type="application/x-mpegURL">
+                <source src="/share/{{ share_id }}/stream.mp4" type="application/x-mpegURL">
                 Your browser does not support the video tag.
             </video>
         </div>
@@ -251,7 +251,7 @@
             }
         });
         
-        var src = '/share/{{ share_id }}/stream.m3u8';
+        var src = '/share/{{ share_id }}/stream.mp4';
         if (Hls.isSupported()) {
             var hls = new Hls();
             hls.loadSource(src);

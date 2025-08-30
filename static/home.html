@@ -62,12 +62,13 @@
         <div class="gallery videos-gallery" id="videos-gallery">
             <!-- Videos (now a single combined list) -->
             {% for video in all_video_cards %}
-            <div class="video-card">
+            <div class="video-card" data-preview-url="{% if video.share_url.startswith('/share/') %}/share/{{ video.share_id }}/preview{% elif video.share_url.startswith('/tag/') %}{{ video.share_url }}/preview{% endif %}">
                 <a href="{{ video.share_url }}">
                     <img src="{{ video.thumbnail_url or '/static/default_thumbnail.jpg' }}" 
                          data-lazy-src="{{ video.lazy_thumbnail_url }}"
                          alt="{{ video.video_name }}"
                          class="lazy-load">
+                    <video class="preview-video" disableremoteplayback playsinline muted loop preload="none"></video>
                     {% if video.hits > 0 %}
                     <div class="hit-counter">
                         <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -114,6 +115,70 @@
                     window.location.href = url.toString();
                 });
             }
+
+            // Video preview on hover
+            const videoCards = document.querySelectorAll('.video-card');
+            let hoverTimeout;
+            
+            console.log(`Found ${videoCards.length} video cards for preview functionality`);
+            
+            videoCards.forEach((card, index) => {
+                const video = card.querySelector('.preview-video');
+                const img = card.querySelector('img');
+                let isLoading = false;
+                let hasLoaded = false;
+                
+                card.addEventListener('mouseenter', function() {
+                    clearTimeout(hoverTimeout);
+                    hoverTimeout = setTimeout(() => {
+                        const previewUrl = card.getAttribute('data-preview-url');
+                        console.log(`Hover on card ${index}, preview URL: ${previewUrl}`);
+                        
+                        if (!isLoading && !video.src) {
+                            isLoading = true;
+                            console.log(`Loading preview for card ${index}`);
+                            video.src = previewUrl;
+                            
+                            video.addEventListener('loadeddata', function onLoad() {
+                                video.removeEventListener('loadeddata', onLoad);
+                                isLoading = false;
+                                hasLoaded = true;
+                                console.log(`Preview loaded for card ${index}`);
+                                if (card.matches(':hover')) {
+                                    img.style.opacity = '0';
+                                    video.style.display = 'block';
+                                    video.play().then(() => {
+                                        console.log(`Preview playing for card ${index}`);
+                                    }).catch(e => {
+                                        console.error(`Preview play failed for card ${index}:`, e);
+                                    });
+                                }
+                            });
+                            
+                            video.addEventListener('error', function onError(e) {
+                                video.removeEventListener('error', onError);
+                                console.error(`Failed to load preview for card ${index}:`, previewUrl, e);
+                                isLoading = false;
+                            });
+                        } else if (hasLoaded && video.src) {
+                            console.log(`Resuming preview for card ${index}`);
+                            img.style.opacity = '0';
+                            video.style.display = 'block';
+                            video.play().catch(e => console.log('Preview play failed:', e));
+                        }
+                    }, 500); // 500ms delay before loading preview
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    clearTimeout(hoverTimeout);
+                    if (video.src) {
+                        console.log(`Pausing preview for card ${index}`);
+                        video.pause();
+                        video.style.display = 'none';
+                        img.style.opacity = '1';
+                    }
+                });
+            });
 
             // Lazy loading for thumbnails
             const lazyImages = document.querySelectorAll('img.lazy-load');
